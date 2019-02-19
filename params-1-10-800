@@ -1,0 +1,10 @@
+model=qvoter_same
+network=er
+N=800
+c=0.5
+k=8
+q=1
+t_max=20000000
+p=0.500000
+folder=/home/joanna/workspace-cdt/network_sim/wyniki/same/
+filename=1
