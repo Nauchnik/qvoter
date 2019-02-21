@@ -18,6 +18,7 @@ Oleg Zaikin, ITMO University
 #include <vector>
 #include <list>
 #include <string>
+#include <chrono>
 
 using namespace std;
 
@@ -35,7 +36,8 @@ int CreateNodesState(int N, double c, vector<int> &nodes_states);
 single_measure Measure(vector<int> &nodes_states, int N, vector < vector <int> > &network, int time);
 bool isConnected(vector < vector <int> > &network, int node1, int node2);
 void RewireToRandom(vector < vector <int> > &network, int basic_node, int old_neighbor, int N);
-void RewireToSame(vector < vector <int> > &network, int basic_node, int old_neighbor, vector<int> &nodes_states, int inTheSameState);
+void RewireToSame(vector < vector <int> > &network, int basic_node, int old_neighbor, 
+	vector<int> &nodes_states, int inTheSameState);
 bool CheckQpanel(vector<int> &qpanel, vector<int> &nodes_states, int q);
 void DynamicsQVoterRandom(list<single_measure> &measure_list, int t_max,
 	vector<vector<int> > &network, vector<int> &nodes_states, int N, int q,
@@ -64,16 +66,26 @@ int main(int argc, char **argv) {
 	std::string folder;
 	string outname;
 
-#ifdef _DEBUG
-	params_file_name = "..//params-1-10-800";
-	seed = 3; // seed
-#else
+	auto start = std::chrono::system_clock::now();
+
 	if (argc < 11) {
-		cerr << "Usage: prog params [seed]" << "\n";
+		cerr << "Usage: program model network N c k q p t_max folder filename [seed]" << "\n";
+		cerr << "--- few minutes execution ---\n"
+		<< "model = qvoter_same\n"
+		<< "network = er\n"
+		<< "N = 400\n"
+		<< "c = 0.5\n"
+		<< "k = 8\n"
+		<< "q = 1\n"
+		<< "p = 0.55\n"
+		<< "t_max = 100000\n"
+		<< "folder = ./\n"
+		<< "filename = 1\n";
 		exit(-1);
 	}
-	//parameters in the order: model network N c k q p t_max filename folder
+	//parameters in the order: model network N c k q p t_max folder filename
 	model = argv[1];
+	// ?? network = argv[2];
 	N = atoi(argv[3]);
 	c = atof(argv[4]);
 	k = atof(argv[5]);
@@ -83,56 +95,20 @@ int main(int argc, char **argv) {
 	folder = argv[9];
 	filename = argv[10];
 
-	seed = (unsigned int) (time(NULL)); //does not work under my compilier wothout brakets
+	seed = (unsigned int) (time(NULL));
 	if (argc > 11) {
 		istringstream(argv[11]) >> seed;
 		cout << "seed " << seed << endl;
 	} else
 		cout << "seed was chosen from the current time\n";
 	srand(seed);
-#endif
+
 	cout << "seed " << seed << endl;
 	cout << "params: model-" << model << "  N-" << N << "  c-" << c << "  k-"
 			<< k << "  q-" << q << "  p-" << p << "  t_max-" << t_max
 			<< "  filename-" << filename << "  folder-" << folder << "\n";
 
 	list<single_measure> measure_list = { };
-//	ifstream cFile(params_file_name);
-//	if (!cFile.is_open()){
-//		cerr << "Couldn't open config file " << params_file_name << " for reading.\n";
-//		exit(-1);
-//	}
-//
-//	string line;
-//	while (getline(cFile, line)) {
-//		//line.erase(remove_if(line.begin(), line.end(), isspace),
-//		//                   line.end());
-//		if (line[0] == '#' || line.empty())
-//			continue;
-//		auto delimiterPos = line.find("=");
-//		auto name = line.substr(0, delimiterPos);
-//		auto value = line.substr(delimiterPos + 1);
-//		cout << "#" << name << " " << value << '\n';
-//		if (name == "model")
-//			model = (value);
-//		if (name == "N")
-//			N = stoi(value);
-//		if (name == "c")
-//			c = stod(value);
-//		if (name == "k")
-//			k = stod(value);
-//		if (name == "p")
-//			p = stod(value);
-//		if (name == "q")
-//			q = stoi(value);
-//		if (name == "t_max")
-//			t_max = stoi(value);
-//		if (name == "filename")
-//			filename = value;
-//		if (name == "folder")
-//			folder = value;
-//	}
-//	cFile.close();
 
 	outname = folder + model + "_q-" + to_string(q) + "_k-" + to_string(k)
 			+ "_c-" + to_string(c) + "_N-" + to_string(N) + "_p-" + to_string(p)
@@ -160,6 +136,12 @@ int main(int argc, char **argv) {
 	}
 
 	SaveMeasure(measure_list, outname);
+
+	auto end = std::chrono::system_clock::now();
+
+	std::chrono::duration<double> elapsed_seconds = end - start;
+
+	std::cout << "elapsed time: " << elapsed_seconds.count() << " s\n";
 
 	return 0;
 }

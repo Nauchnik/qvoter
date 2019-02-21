@@ -1,0 +1,10 @@
+model=qvoter_same
+network=er
+N=10000
+c=0.5
+k=8
+q=1
+t_max=100000
+p=0.55
+folder=/
+filename=1
