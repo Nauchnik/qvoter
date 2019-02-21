@@ -43,6 +43,9 @@ void DynamicsQVoterRandom(list<single_measure> &measure_list, int t_max,
 void DynamicsQVoterSame(list<single_measure> &measure_list, int t_max,
 	vector<vector<int> > &network, vector<int> &nodes_states, int N, int q,
 	double p);
+void DynamicsQVoterSameAK(list<single_measure> &measure_list, int t_max,
+		vector<vector<int> > &network, vector<int> nodes_states, int N, int q,
+		double p);
 void SaveMeasure(const list<single_measure>& measure_list, string  outfile_name);
 void GenerateParams();
 void CreateParams();
@@ -147,8 +150,11 @@ int main(int argc, char **argv) {
 	} else if (model == "qvoter_random") {
 		DynamicsQVoterRandom(measure_list, t_max, network, nodes_states, N, q,
 				p);
+	} else if (model == "qvoter_same_ak") {
+		DynamicsQVoterSameAK(measure_list,  t_max,network, nodes_states, N,  q,
+				p);
 	} else {
-		cerr << "Wrong model name. Possible models: qvoter_same, qvoter_random"
+		cerr << "Wrong model name. Possible models: qvoter_same, qvoter_random, qvoter_same_ak"
 				<< "\n";
 		exit(-1);
 	}
@@ -392,6 +398,79 @@ void DynamicsQVoterSame(list<single_measure> &measure_list, int t_max,
 		if ((t % 100) == 0)
 			cout << t << "\n";
 	}
+}
+
+void DynamicsQVoterSameAK(list<single_measure> &measure_list, int t_max,
+		vector<vector<int> > &network, vector<int> nodes_states, int N, int q,
+		double p){
+cout<<"ak"<<'\n';
+	int t = 0;
+	vector<int> qpanel(q);
+	int basic_node, r1, old_neighbor, inTheSameState,state,a;
+	int number_of_plus_nodes = 0, number_of_minus_nodes = 0;
+	for (int i = 0; i < N; i++) {
+		if (nodes_states[i] == 1) {
+			number_of_plus_nodes++;
+		} else {
+			number_of_minus_nodes++;
+		}
+	}
+	int size, neighbors_it, neighbor_counter;
+	measure_list.push_back(Measure(nodes_states, N, network, t));
+
+	while ((t < t_max) && (measure_list.back().E_interface > 0)) { //E_int>0){
+		for (int microstep = 0; microstep < N; microstep++) {
+			basic_node = rand() % N;
+			size = network[basic_node].size();
+			state=nodes_states[basic_node];
+			a = 0;
+			if (size > 0) {
+				for (int it = 0; it < size; it++) {
+					if (nodes_states[network[basic_node][it]] != state) {
+						a++;
+					}
+				}
+				if ((((double) rand()) / RAND_MAX)
+						< (pow(((double) a) / ((double) size), q))) {
+					r1 = rand() % a;
+					neighbors_it = -1;
+					neighbor_counter=-1;
+					while (neighbor_counter < r1) {
+						neighbors_it++;
+						if (state
+								!= nodes_states[network[basic_node][neighbors_it]]) {
+							neighbor_counter++;
+						}
+					}
+					old_neighbor = network[basic_node][neighbors_it];
+					if ((((double) rand()) / RAND_MAX) < p) {
+
+						if (nodes_states[basic_node] == 1) {
+							inTheSameState = number_of_plus_nodes;
+						} else {
+							inTheSameState = number_of_minus_nodes;
+						}
+						RewireToSame(network, basic_node, old_neighbor,
+								nodes_states, inTheSameState);
+					} else {
+						if (nodes_states[basic_node] == 1) {
+							number_of_plus_nodes--;
+							number_of_minus_nodes++;
+						} else {
+							number_of_plus_nodes++;
+							number_of_minus_nodes--;
+						}
+						nodes_states[basic_node] = nodes_states[old_neighbor];
+					}
+				}
+			}
+		}
+		t++;
+		measure_list.push_back(Measure(nodes_states, N, network, t)); //, &E_int));
+		if ((t % 100) == 0)
+			cout << t << "\n";
+	}
+
 }
 
 // write the measure list to the output file
