@@ -47,32 +47,9 @@ void SaveMeasure(const list<single_measure>& measure_list, string  outfile_name)
 void GenerateParams();
 void CreateParams();
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
 	string params_file_name;
 	unsigned int seed;
-#ifdef _DEBUG
-	params_file_name = "..//params-1-10-800";
-	seed = 3; // seed
-#else
-	if (argc < 2) {
-		cerr << "Usage: prog params_file [seed]" << "\n";
-		exit(-1);
-	}
-	params_file_name = argv[1];
-
-	seed = unsigned int(time(NULL));
-	if (argc > 2) {
-		istringstream(argv[2]) >> seed;
-		cout << "seed " << seed << endl;
-	}
-	else
-		cout << "seed was chosen from the current time\n";
-	srand(seed);
-#endif
-	cout << "seed " << seed << endl;
-	cout << "params_file_name " << params_file_name << "\n";
-	
 	int N;
 	double c;
 	double k;
@@ -80,53 +57,83 @@ int main(int argc, char **argv)
 	int q;
 	int t_max;
 	string model;
-	string filename;
-	string folder;
+	std::string filename;
+	std::string folder;
 	string outname;
-	list<single_measure> measure_list = { };
 
-	// params file should have:
-	// value = param
-	ifstream cFile(params_file_name);
-	if (!cFile.is_open()){
-		cerr << "Couldn't open config file " << params_file_name << " for reading.\n";
+#ifdef _DEBUG
+	params_file_name = "..//params-1-10-800";
+	seed = 3; // seed
+#else
+	if (argc < 11) {
+		cerr << "Usage: prog params [seed]" << "\n";
 		exit(-1);
 	}
-	
-	string line;
-	while (getline(cFile, line)) {
-		//line.erase(remove_if(line.begin(), line.end(), isspace),
-		//                   line.end());
-		if (line[0] == '#' || line.empty())
-			continue;
-		auto delimiterPos = line.find("=");
-		auto name = line.substr(0, delimiterPos);
-		auto value = line.substr(delimiterPos + 1);
-		cout << "#" << name << " " << value << '\n';
-		if (name == "model")
-			model = (value);
-		if (name == "N")
-			N = stoi(value);
-		if (name == "c")
-			c = stod(value);
-		if (name == "k")
-			k = stod(value);
-		if (name == "p")
-			p = stod(value);
-		if (name == "q")
-			q = stoi(value);
-		if (name == "t_max")
-			t_max = stoi(value);
-		if (name == "filename")
-			filename = value;
-		if (name == "folder")
-			folder = value;
-	}
-	cFile.close();
+	//parameters in the order: model network N c k q p t_max filename folder
+	model = argv[1];
+	N = atoi(argv[3]);
+	c = atof(argv[4]);
+	k = atof(argv[5]);
+	q = atoi(argv[6]);
+	p = atof(argv[7]);
+	t_max = atoi(argv[8]);
+	folder = argv[9];
+	filename = argv[10];
 
-	outname = folder + model + "_q-" + to_string(q) + "_k-"
-		+ to_string(k) + "_c-" + to_string(c) + "_N-" + to_string(N)
-		+ "_p-" + to_string(p) + "_" + filename;
+	seed = (unsigned int) (time(NULL)); //does not work under my compilier wothout brakets
+	if (argc > 11) {
+		istringstream(argv[11]) >> seed;
+		cout << "seed " << seed << endl;
+	} else
+		cout << "seed was chosen from the current time\n";
+	srand(seed);
+#endif
+	cout << "seed " << seed << endl;
+	cout << "params: model-" << model << "  N-" << N << "  c-" << c << "  k-"
+			<< k << "  q-" << q << "  p-" << p << "  t_max-" << t_max
+			<< "  filename-" << filename << "  folder-" << folder << "\n";
+
+	list<single_measure> measure_list = { };
+//	ifstream cFile(params_file_name);
+//	if (!cFile.is_open()){
+//		cerr << "Couldn't open config file " << params_file_name << " for reading.\n";
+//		exit(-1);
+//	}
+//
+//	string line;
+//	while (getline(cFile, line)) {
+//		//line.erase(remove_if(line.begin(), line.end(), isspace),
+//		//                   line.end());
+//		if (line[0] == '#' || line.empty())
+//			continue;
+//		auto delimiterPos = line.find("=");
+//		auto name = line.substr(0, delimiterPos);
+//		auto value = line.substr(delimiterPos + 1);
+//		cout << "#" << name << " " << value << '\n';
+//		if (name == "model")
+//			model = (value);
+//		if (name == "N")
+//			N = stoi(value);
+//		if (name == "c")
+//			c = stod(value);
+//		if (name == "k")
+//			k = stod(value);
+//		if (name == "p")
+//			p = stod(value);
+//		if (name == "q")
+//			q = stoi(value);
+//		if (name == "t_max")
+//			t_max = stoi(value);
+//		if (name == "filename")
+//			filename = value;
+//		if (name == "folder")
+//			folder = value;
+//	}
+//	cFile.close();
+
+	outname = folder + model + "_q-" + to_string(q) + "_k-" + to_string(k)
+			+ "_c-" + to_string(c) + "_N-" + to_string(N) + "_p-" + to_string(p)
+			+ "_" + filename;
 	cout << "output file name is " << outname << endl;
 
 	vector<int> nodes_states(N);
@@ -136,12 +143,14 @@ int main(int argc, char **argv)
 	CreateNodesState(N, c, nodes_states);
 
 	if (model == "qvoter_same") {
-		DynamicsQVoterSame(measure_list, t_max, network, nodes_states,
-			N, q, p);
-	}
-	else if (model == "qvoter_random") {
-		DynamicsQVoterRandom(measure_list, t_max, network, nodes_states,
-			N, q, p);
+		DynamicsQVoterSame(measure_list, t_max, network, nodes_states, N, q, p);
+	} else if (model == "qvoter_random") {
+		DynamicsQVoterRandom(measure_list, t_max, network, nodes_states, N, q,
+				p);
+	} else {
+		cerr << "Wrong model name. Possible models: qvoter_same, qvoter_random"
+				<< "\n";
+		exit(-1);
 	}
 
 	SaveMeasure(measure_list, outname);
