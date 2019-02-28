@@ -13,6 +13,7 @@ Oleg Zaikin, ITMO University
 #include <chrono>
 
 #include "network_sim.h"
+#include "network_sim_parallel.h"
 
 int main(int argc, char **argv) 
 {

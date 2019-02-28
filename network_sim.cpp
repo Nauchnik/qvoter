@@ -41,6 +41,14 @@ void network_simiulation_sequential::Init()
 	network.resize(N);
 }
 
+void network_simiulation_sequential::GenerateSearchSpace()
+{
+	vector<int> index_arr;
+	vector<double> cur_point;
+	while (next_cartesian(search_space_values, index_arr, cur_point))
+		search_space_points.push_back(cur_point);
+}
+
 void network_simiulation_sequential::LaunchSimulation()
 {
 	if (model == "qvoter_same") {
