@@ -1,88 +1,7 @@
-/* 
-qvoter dynamics simulation
+#include "network_sim.h"
 
-authors: 
-Joanna Toruniewska, Warsaw University of Technology
-Oleg Zaikin, ITMO University 
-*/
-
-#include <stdio.h>      /* printf, scanf, puts, NULL */
-#include <stdlib.h>     /* srand, rand */
-#include <cstdlib>
-#include <ctime>
-#include <math.h>
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-#include <sstream>
-#include <vector>
-#include <list>
-#include <string>
-#include <chrono>
-
-using namespace std;
-
-struct single_measure {
-	int E_interface;
-	int E_plus;
-	int E_minus;
-	int plus_nodes;
-	int minus_nodes;
-	int time;
-};
-
-void CreateGraphER(vector < vector <int> > &network, int N, double k);
-int CreateNodesState(int N, double c, vector<int> &nodes_states);
-single_measure Measure(vector<int> &nodes_states, int N, vector < vector <int> > &network, int time);
-bool isConnected(vector < vector <int> > &network, int node1, int node2);
-void RewireToRandom(vector < vector <int> > &network, int basic_node, int old_neighbor, int N);
-void RewireToSame(vector < vector <int> > &network, int basic_node, int old_neighbor, 
-	vector<int> &nodes_states, int inTheSameState);
-bool CheckQpanel(vector<int> &qpanel, vector<int> &nodes_states, int q);
-void DynamicsQVoterRandom(list<single_measure> &measure_list, int t_max,
-	vector<vector<int> > &network, vector<int> &nodes_states, int N, int q,
-	double p);
-void DynamicsQVoterSame(list<single_measure> &measure_list, int t_max,
-	vector<vector<int> > &network, vector<int> &nodes_states, int N, int q,
-	double p);
-void DynamicsQVoterSameAK(list<single_measure> &measure_list, int t_max,
-		vector<vector<int> > &network, vector<int> nodes_states, int N, int q,
-		double p);
-void SaveMeasure(const list<single_measure>& measure_list, string  outfile_name);
-void GenerateParams();
-void CreateParams();
-
-int main(int argc, char **argv) {
-	string params_file_name;
-	unsigned int seed;
-	int N;
-	double c;
-	double k;
-	double p;
-	int q;
-	int t_max;
-	string model;
-	std::string filename;
-	std::string folder;
-	string outname;
-
-	auto start = std::chrono::system_clock::now();
-
-	if (argc < 11) {
-		cerr << "Usage: program model network N c k q p t_max folder filename [seed]" << "\n";
-		cerr << "--- few minutes execution ---\n"
-		<< "model = qvoter_same\n"
-		<< "network = er\n"
-		<< "N = 400\n"
-		<< "c = 0.5\n"
-		<< "k = 8\n"
-		<< "q = 1\n"
-		<< "p = 0.55\n"
-		<< "t_max = 100000\n"
-		<< "folder = ./\n"
-		<< "filename = 1\n";
-		exit(-1);
-	}
+void network_simiulation_sequential::ReadParams(const int argc, char **argv)
+{
 	//parameters in the order: model network N c k q p t_max folder filename
 	model = argv[1];
 	// ?? network = argv[2];
@@ -95,66 +14,62 @@ int main(int argc, char **argv) {
 	folder = argv[9];
 	filename = argv[10];
 
-	seed = (unsigned int) (time(NULL));
 	if (argc > 11) {
 		istringstream(argv[11]) >> seed;
 		cout << "seed " << seed << endl;
-	} else
+	}
+	else {
+		seed = (unsigned int)(time(NULL));
 		cout << "seed was chosen from the current time\n";
+	}
 	srand(seed);
 
 	cout << "seed " << seed << endl;
 	cout << "params: model-" << model << "  N-" << N << "  c-" << c << "  k-"
-			<< k << "  q-" << q << "  p-" << p << "  t_max-" << t_max
-			<< "  filename-" << filename << "  folder-" << folder << "\n";
-
-	list<single_measure> measure_list = { };
+		<< k << "  q-" << q << "  p-" << p << "  t_max-" << t_max
+		<< "  filename-" << filename << "  folder-" << folder << "\n";
 
 	outname = folder + model + "_q-" + to_string(q) + "_k-" + to_string(k)
-			+ "_c-" + to_string(c) + "_N-" + to_string(N) + "_p-" + to_string(p)
-			+ "_" + filename;
+		+ "_c-" + to_string(c) + "_N-" + to_string(N) + "_p-" + to_string(p)
+		+ "_" + filename;
 	cout << "output file name is " << outname << endl;
+}
 
-	vector<int> nodes_states(N);
-	vector<vector<int> > network(N, vector<int>());
+void network_simiulation_sequential::Init()
+{
+	nodes_states.resize(N);
+	network.resize(N);
+}
 
-	CreateGraphER(network, N, k);
-	CreateNodesState(N, c, nodes_states);
-
+void network_simiulation_sequential::LaunchSimulation()
+{
 	if (model == "qvoter_same") {
 		DynamicsQVoterSame(measure_list, t_max, network, nodes_states, N, q, p);
-	} else if (model == "qvoter_random") {
+	}
+	else if (model == "qvoter_random") {
 		DynamicsQVoterRandom(measure_list, t_max, network, nodes_states, N, q,
-				p);
-	} else if (model == "qvoter_same_ak") {
-		DynamicsQVoterSameAK(measure_list,  t_max,network, nodes_states, N,  q,
-				p);
-	} else {
+			p);
+	}
+	else if (model == "qvoter_same_ak") {
+		DynamicsQVoterSameAK(measure_list, t_max, network, nodes_states, N, q,
+			p);
+	}
+	else {
 		cerr << "Wrong model name. Possible models: qvoter_same, qvoter_random, qvoter_same_ak"
-				<< "\n";
+			<< "\n";
 		exit(-1);
 	}
-
-	SaveMeasure(measure_list, outname);
-
-	auto end = std::chrono::system_clock::now();
-
-	std::chrono::duration<double> elapsed_seconds = end - start;
-
-	std::cout << "elapsed time: " << elapsed_seconds.count() << " s\n";
-
-	return 0;
 }
 
 // create a random Erdos Renyi graph with N nodes and mean degree k
-void CreateGraphER(vector < vector <int> > &network, int N, double k)
+void network_simiulation_sequential::CreateGraphER()
 {
-	double p=k/((double)N-1);
+	double p = k / ((double)N - 1);
 	double r;
-	for (int i=0; i<N;i++){
-		for(int j=i; j<N;j++){
-			r =((double)rand()) / RAND_MAX;
-			if(r<p){
+	for (int i = 0; i < N; i++) {
+		for (int j = i; j < N; j++) {
+			r = ((double)rand()) / RAND_MAX;
+			if (r < p) {
 				network[i].push_back(j);
 				network[j].push_back(i);
 			}
@@ -163,38 +78,39 @@ void CreateGraphER(vector < vector <int> > &network, int N, double k)
 }
 
 //adds states to nodes, c*N nodes with plus state, (1-c)*N with -1 state
-int CreateNodesState(int N, double c, vector<int> &nodes_states)
+int network_simiulation_sequential::CreateNodesState()
 {
 	int bound = (int)round(c*(double)N);
-	for (int i=0; i<bound; i++)
-		nodes_states[i]=1;
-	for (int i=bound; i<N; i++)
-		nodes_states[i]=-1;
+	for (int i = 0; i < bound; i++)
+		nodes_states[i] = 1;
+	for (int i = bound; i < N; i++)
+		nodes_states[i] = -1;
 	return 0;
 }
 
 //measure number of links in each state and number of nodes in each state
-single_measure Measure(vector<int> &nodes_states, int N, vector < vector <int> > &network, int time)
+single_measure network_simiulation_sequential::Measure(vector<int> &nodes_states, int N, vector < vector <int> > &network, int time)
 { //przemyslec co z tym wskaznikiem, int* E_int){
-	int plus_nodes=0;
-	int minus_nodes=0;
-	int E_int=0;
-	int E_plus=0;
-	int E_minus=0;
-	for (int i=0; i<N; i++){
-		size_t neighbor_number=network[i].size();
-		if(nodes_states[i] == 1){
+	int plus_nodes = 0;
+	int minus_nodes = 0;
+	int E_int = 0;
+	int E_plus = 0;
+	int E_minus = 0;
+	for (int i = 0; i < N; i++) {
+		size_t neighbor_number = network[i].size();
+		if (nodes_states[i] == 1) {
 			plus_nodes++;
-			for(int j=0;j<neighbor_number;j++){
-				if(nodes_states[network[i][j]]==1)
+			for (int j = 0; j < neighbor_number; j++) {
+				if (nodes_states[network[i][j]] == 1)
 					E_plus++;
 				else
 					E_int++;
 			}
-		}else{
-				minus_nodes++;
-				for(int j=0;j<neighbor_number;j++){
-				if(nodes_states[network[i][j]]==-1)
+		}
+		else {
+			minus_nodes++;
+			for (int j = 0; j < neighbor_number; j++) {
+				if (nodes_states[network[i][j]] == -1)
 					E_minus++;
 				else
 					E_int++;
@@ -202,72 +118,72 @@ single_measure Measure(vector<int> &nodes_states, int N, vector < vector <int> >
 		}
 	}
 	single_measure cokolwiek;
-	cokolwiek.plus_nodes=plus_nodes;
-	cokolwiek.minus_nodes=minus_nodes;
-	cokolwiek.E_interface=E_int/2;
-	cokolwiek.E_plus=E_plus/2;
-	cokolwiek.E_minus=E_minus/2;
-	cokolwiek.time=time;
+	cokolwiek.plus_nodes = plus_nodes;
+	cokolwiek.minus_nodes = minus_nodes;
+	cokolwiek.E_interface = E_int / 2;
+	cokolwiek.E_plus = E_plus / 2;
+	cokolwiek.E_minus = E_minus / 2;
+	cokolwiek.time = time;
 
 	return cokolwiek;
 }
 
 //check if two nodes are connected
-bool isConnected(vector < vector <int> > &network,int node1, int node2)
+bool network_simiulation_sequential::isConnected(vector < vector <int> > &network, int node1, int node2)
 {
-	bool connected=false;
-	if (find(network[node1].begin(), network[node1].end(),node2)!=network[node1].end())
-		connected=true;
+	bool connected = false;
+	if (find(network[node1].begin(), network[node1].end(), node2) != network[node1].end())
+		connected = true;
 	return connected;
 }
 
 //rewire basic_node link from old_neighbor to randomly chosen node in the network
-void RewireToRandom(vector < vector <int> > &network, int basic_node,int old_neighbor, int N )
+void network_simiulation_sequential::RewireToRandom(vector < vector <int> > &network, int basic_node, int old_neighbor, int N)
 {
 	//TODO lack of ensuracne that there is no more not connected nodes in the network
-	int new_neighbor=rand() % N;
-	while(isConnected(network, basic_node, new_neighbor))
-		new_neighbor=rand() % N;
-	replace (network[basic_node].begin(), network[basic_node].end(),old_neighbor , new_neighbor);
+	int new_neighbor = rand() % N;
+	while (isConnected(network, basic_node, new_neighbor))
+		new_neighbor = rand() % N;
+	replace(network[basic_node].begin(), network[basic_node].end(), old_neighbor, new_neighbor);
 	vector<int>::iterator position = find(network[old_neighbor].begin(), network[old_neighbor].end(), basic_node);
 	network[old_neighbor].erase(position);
 	network[new_neighbor].push_back(basic_node);
 }
 
 // rewire basic_node link from old_neighbor to randomly chosen node in the network with the same state as basic_node
-void RewireToSame(vector < vector <int> > &network, int basic_node,int old_neighbor, vector<int> &nodes_states, int inTheSameState)
+void network_simiulation_sequential::RewireToSame(vector < vector <int> > &network, int basic_node, int old_neighbor, vector<int> &nodes_states, int inTheSameState)
 {
-//very very slow probably
-	int neighbor_in_the_same_state=0;
-	int state_basic_nodes=nodes_states[basic_node];
-	for(unsigned i=0;i<network[basic_node].size();i++){
-		if(nodes_states[network[basic_node][i]]==state_basic_nodes)
+	//very very slow probably
+	int neighbor_in_the_same_state = 0;
+	int state_basic_nodes = nodes_states[basic_node];
+	for (unsigned i = 0; i < network[basic_node].size(); i++) {
+		if (nodes_states[network[basic_node][i]] == state_basic_nodes)
 			neighbor_in_the_same_state++;
 	}
-	int number_of_possible_nodes=inTheSameState-neighbor_in_the_same_state;
-	if(number_of_possible_nodes>0){
-		int rand_number=rand() % (number_of_possible_nodes);
-		int j=0, new_neighbor=-1;
-		while(j<=rand_number){
+	int number_of_possible_nodes = inTheSameState - neighbor_in_the_same_state;
+	if (number_of_possible_nodes > 0) {
+		int rand_number = rand() % (number_of_possible_nodes);
+		int j = 0, new_neighbor = -1;
+		while (j <= rand_number) {
 			new_neighbor++;
-			if(nodes_states[new_neighbor]==state_basic_nodes && !isConnected(network, basic_node, new_neighbor))
+			if (nodes_states[new_neighbor] == state_basic_nodes && !isConnected(network, basic_node, new_neighbor))
 				j++;
 		}
 
-		replace (network[basic_node].begin(), network[basic_node].end(), old_neighbor, new_neighbor);
+		replace(network[basic_node].begin(), network[basic_node].end(), old_neighbor, new_neighbor);
 		vector<int>::iterator position = find(network[old_neighbor].begin(), network[old_neighbor].end(), basic_node);
 		network[old_neighbor].erase(position);
 		network[new_neighbor].push_back(basic_node);
 	}
 }
 
-bool CheckQpanel(vector<int> &qpanel, vector<int> &nodes_states, int q)
+bool network_simiulation_sequential::CheckQpanel(vector<int> &qpanel, vector<int> &nodes_states, int q)
 {
-	bool identical=true;
-	int state=nodes_states[qpanel[0]];
-	for(int i=1; i<q;i++){
-		if(nodes_states[qpanel[i]]!=state){
-			identical=false;
+	bool identical = true;
+	int state = nodes_states[qpanel[0]];
+	for (int i = 1; i < q; i++) {
+		if (nodes_states[qpanel[i]] != state) {
+			identical = false;
 			break;
 		}
 	}
@@ -275,9 +191,9 @@ bool CheckQpanel(vector<int> &qpanel, vector<int> &nodes_states, int q)
 }
 
 //whole random qvoter model dynamics
-void DynamicsQVoterRandom(list<single_measure> &measure_list, int t_max,
-		vector<vector<int> > &network, vector<int> &nodes_states, int N, int q,
-		double p) 
+void network_simiulation_sequential::DynamicsQVoterRandom(list<single_measure> &measure_list, int t_max,
+	vector<vector<int> > &network, vector<int> &nodes_states, int N, int q,
+	double p)
 {
 	int t = 0;
 	vector<int> qpanel(q);
@@ -299,13 +215,14 @@ void DynamicsQVoterRandom(list<single_measure> &measure_list, int t_max,
 						qpanel[i] = network[basic_node][r1];
 					}
 					if (CheckQpanel(qpanel, nodes_states, q)) {
-						if ((((double) rand()) / RAND_MAX) < p) {
+						if ((((double)rand()) / RAND_MAX) < p) {
 							r1 = rand() % q;
 							old_neighbor = qpanel[r1];
 
 							RewireToRandom(network, basic_node, old_neighbor,
-									N);
-						} else {
+								N);
+						}
+						else {
 							nodes_states[basic_node] = nodes_states[qpanel[0]];
 						}
 					}
@@ -320,9 +237,9 @@ void DynamicsQVoterRandom(list<single_measure> &measure_list, int t_max,
 }
 
 //whole same qvoter model dynamics
-void DynamicsQVoterSame(list<single_measure> &measure_list, int t_max,
-		vector<vector<int> > &network, vector<int> &nodes_states, int N, int q,
-		double p) 
+void network_simiulation_sequential::DynamicsQVoterSame(list<single_measure> &measure_list, int t_max,
+	vector<vector<int> > &network, vector<int> &nodes_states, int N, int q,
+	double p)
 {
 	int t = 0;
 	vector<int> qpanel(q);
@@ -350,22 +267,25 @@ void DynamicsQVoterSame(list<single_measure> &measure_list, int t_max,
 						qpanel[i] = network[basic_node][r1];
 					}
 					if (CheckQpanel(qpanel, nodes_states, q)) {
-						if ((((double) rand()) / RAND_MAX) < p) {
+						if ((((double)rand()) / RAND_MAX) < p) {
 							r1 = rand() % q;
 							old_neighbor = qpanel[r1];
 
 							if (nodes_states[basic_node] == 1) {
 								inTheSameState = number_of_plus_nodes;
-							} else {
+							}
+							else {
 								inTheSameState = number_of_minus_nodes;
 							}
 							RewireToSame(network, basic_node, old_neighbor,
-									nodes_states, inTheSameState);
-						} else {
+								nodes_states, inTheSameState);
+						}
+						else {
 							if (nodes_states[basic_node] == 1) {
 								number_of_plus_nodes--;
 								number_of_minus_nodes++;
-							} else {
+							}
+							else {
 								number_of_plus_nodes++;
 								number_of_minus_nodes--;
 							}
@@ -382,18 +302,19 @@ void DynamicsQVoterSame(list<single_measure> &measure_list, int t_max,
 	}
 }
 
-void DynamicsQVoterSameAK(list<single_measure> &measure_list, int t_max,
-		vector<vector<int> > &network, vector<int> nodes_states, int N, int q,
-		double p){
-cout<<"ak"<<'\n';
+void network_simiulation_sequential::DynamicsQVoterSameAK(list<single_measure> &measure_list, int t_max,
+	vector<vector<int> > &network, vector<int> nodes_states, int N, int q,
+	double p) {
+	cout << "ak" << '\n';
 	int t = 0;
 	vector<int> qpanel(q);
-	int basic_node, r1, old_neighbor, inTheSameState,state,a;
+	int basic_node, r1, old_neighbor, inTheSameState, state, a;
 	int number_of_plus_nodes = 0, number_of_minus_nodes = 0;
 	for (int i = 0; i < N; i++) {
 		if (nodes_states[i] == 1) {
 			number_of_plus_nodes++;
-		} else {
+		}
+		else {
 			number_of_minus_nodes++;
 		}
 	}
@@ -404,7 +325,7 @@ cout<<"ak"<<'\n';
 		for (int microstep = 0; microstep < N; microstep++) {
 			basic_node = rand() % N;
 			size = network[basic_node].size();
-			state=nodes_states[basic_node];
+			state = nodes_states[basic_node];
 			a = 0;
 			if (size > 0) {
 				for (int it = 0; it < size; it++) {
@@ -412,33 +333,36 @@ cout<<"ak"<<'\n';
 						a++;
 					}
 				}
-				if ((((double) rand()) / RAND_MAX)
-						< (pow(((double) a) / ((double) size), q))) {
+				if ((((double)rand()) / RAND_MAX)
+					< (pow(((double)a) / ((double)size), q))) {
 					r1 = rand() % a;
 					neighbors_it = -1;
-					neighbor_counter=-1;
+					neighbor_counter = -1;
 					while (neighbor_counter < r1) {
 						neighbors_it++;
 						if (state
-								!= nodes_states[network[basic_node][neighbors_it]]) {
+							!= nodes_states[network[basic_node][neighbors_it]]) {
 							neighbor_counter++;
 						}
 					}
 					old_neighbor = network[basic_node][neighbors_it];
-					if ((((double) rand()) / RAND_MAX) < p) {
+					if ((((double)rand()) / RAND_MAX) < p) {
 
 						if (nodes_states[basic_node] == 1) {
 							inTheSameState = number_of_plus_nodes;
-						} else {
+						}
+						else {
 							inTheSameState = number_of_minus_nodes;
 						}
 						RewireToSame(network, basic_node, old_neighbor,
-								nodes_states, inTheSameState);
-					} else {
+							nodes_states, inTheSameState);
+					}
+					else {
 						if (nodes_states[basic_node] == 1) {
 							number_of_plus_nodes--;
 							number_of_minus_nodes++;
-						} else {
+						}
+						else {
 							number_of_plus_nodes++;
 							number_of_minus_nodes--;
 						}
@@ -456,17 +380,17 @@ cout<<"ak"<<'\n';
 }
 
 // write the measure list to the output file
-void SaveMeasure( const list<single_measure>& measure_list, string outfile_name )
+void network_simiulation_sequential::SaveMeasure()
 {
-	ofstream ofile(outfile_name);
+	ofstream ofile(outname);
 	ofile << "#time\tE_interface\tE_plus\tE_minus\tplus_nodes\tminus_nodes\n";
-	for( const auto& v : measure_list ) 
-		ofile <<v.time<<'\t'<< v.E_interface << '\t'<<v.E_plus<<'\t'<<v.E_minus
-		      <<'\t'<<v.plus_nodes<<'\t'<<v.minus_nodes<<'\n' ;
+	for (const auto& v : measure_list)
+		ofile << v.time << '\t' << v.E_interface << '\t' << v.E_plus << '\t' << v.E_minus
+		<< '\t' << v.plus_nodes << '\t' << v.minus_nodes << '\n';
 	ofile.close();
 }
 
-void CreateParams()
+void network_simiulation_sequential::CreateParams()
 {
 	string catalogue = "";
 	string name = "params_";
@@ -488,7 +412,7 @@ void CreateParams()
 }
 
 // create files with params
-void GenerateParams()
+void network_simiulation_sequential::GenerateParams()
 {
 	string catalogue = "";
 	string name = "params-";
