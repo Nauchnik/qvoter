@@ -1,10 +1,19 @@
 #include "network_sim.h"
 
+#include <sstream>
+
+network_simiulation_sequential::network_simiulation_sequential() :
+	t_max(1000000000),
+	folder(""),
+	filename(""),
+	seed(-1)
+{}
+
 void network_simiulation_sequential::ReadParams(const int argc, char **argv)
 {
-	//parameters in the order: model network N c k q p t_max folder filename
+	//parameters in the order: model network_type N c k q p t_max folder filename
 	model = argv[1];
-	// ?? network = argv[2];
+	network_type = argv[2];
 	N = atoi(argv[3]);
 	c = atof(argv[4]);
 	k = atof(argv[5]);
@@ -22,31 +31,31 @@ void network_simiulation_sequential::ReadParams(const int argc, char **argv)
 		seed = (unsigned int)(time(NULL));
 		cout << "seed was chosen from the current time\n";
 	}
-	srand(seed);
 
 	cout << "seed " << seed << endl;
 	cout << "params: model-" << model << "  N-" << N << "  c-" << c << "  k-"
 		<< k << "  q-" << q << "  p-" << p << "  t_max-" << t_max
 		<< "  filename-" << filename << "  folder-" << folder << "\n";
+}
 
-	outname = folder + model + "_q-" + to_string(q) + "_k-" + to_string(k)
-		+ "_c-" + to_string(c) + "_N-" + to_string(N) + "_p-" + to_string(p)
-		+ "_" + filename;
-	cout << "output file name is " << outname << endl;
+void network_simiulation_sequential::GetOutputName() 
+{
+	stringstream sstream;
+	sstream << folder << model << "_q-" << q << "_k-" << k << "_c-" << c << "_N-" << N << "_p-" << p;
+	if (filename != "")
+		sstream << "_" << filename;
+	sstream << "_r-" << realization << "_seed-" << seed;
+	
+	outname = sstream.str();
+	if (verbosity > 0)
+		cout << "output file name is " << outname << endl;
 }
 
 void network_simiulation_sequential::Init()
 {
+	srand(seed);
 	nodes_states.resize(N);
 	network.resize(N);
-}
-
-void network_simiulation_sequential::GenerateSearchSpace()
-{
-	vector<int> index_arr;
-	vector<double> cur_point;
-	while (next_cartesian(search_space_values, index_arr, cur_point))
-		search_space_points.push_back(cur_point);
 }
 
 void network_simiulation_sequential::LaunchSimulation()
@@ -239,7 +248,7 @@ void network_simiulation_sequential::DynamicsQVoterRandom(list<single_measure> &
 		}
 		t++;
 		measure_list.push_back(Measure(nodes_states, N, network, t)); //, &E_int));
-		if ((t % 100) == 0)
+		if ( ((t % 100) == 0) && (verbosity > 0) )
 			cout << t << "\n";
 	}
 }
@@ -305,15 +314,17 @@ void network_simiulation_sequential::DynamicsQVoterSame(list<single_measure> &me
 		}
 		t++;
 		measure_list.push_back(Measure(nodes_states, N, network, t)); //, &E_int));
-		if ((t % 100) == 0)
+		if ( ((t % 100) == 0) && (verbosity > 0) )
 			cout << t << "\n";
 	}
 }
 
 void network_simiulation_sequential::DynamicsQVoterSameAK(list<single_measure> &measure_list, int t_max,
 	vector<vector<int> > &network, vector<int> nodes_states, int N, int q,
-	double p) {
-	cout << "ak" << '\n';
+	double p) 
+{
+	if (verbosity > 0)
+		cout << "ak" << '\n';
 	int t = 0;
 	vector<int> qpanel(q);
 	int basic_node, r1, old_neighbor, inTheSameState, state, a;
@@ -381,7 +392,7 @@ void network_simiulation_sequential::DynamicsQVoterSameAK(list<single_measure> &
 		}
 		t++;
 		measure_list.push_back(Measure(nodes_states, N, network, t)); //, &E_int));
-		if ((t % 100) == 0)
+		if ( ((t % 100) == 0) && (verbosity > 0) )
 			cout << t << "\n";
 	}
 
@@ -404,7 +415,7 @@ void network_simiulation_sequential::CreateParams()
 	string name = "params_";
 
 	for (int i = 0; i < 10; i++) {
-		ofstream ofile(catalogue + name + to_string(i));
+		ofstream ofile(catalogue + name + to_string((long long)i));
 		ofile << "model=qvoter_same" << '\n';
 		ofile << "network=er" << '\n';
 		ofile << "N=1000" << '\n';
@@ -414,7 +425,7 @@ void network_simiulation_sequential::CreateParams()
 		ofile << "t_max=20000000" << '\n';
 		ofile << "p=0.0" << '\n';
 		ofile << "folder=/home/joanna/workspace-cdt/network_sim/" << '\n';
-		ofile << "filename=test_" + to_string(i) << '\n';
+		ofile << "filename=test_" + to_string((long long)i) << '\n';
 		ofile.close();
 	}
 }
@@ -430,18 +441,19 @@ void network_simiulation_sequential::GenerateParams()
 		N = Nvec[j];
 		for (int p = 0; p <= 20; p++) {
 			for (int i = 0; i < 1000; i++) {
-				string ofile_name = catalogue + name + to_string(i) + "-" + to_string(p) + "-" + to_string(N);
+				string ofile_name = catalogue + name + to_string((long long)i) + "-" 
+					+ to_string((long long)p) + "-" + to_string((long long)N);
 				std::ofstream ofile(ofile_name);
 				ofile << "model=qvoter_same" << '\n';
 				ofile << "network=er" << '\n';
-				ofile << "N=" + to_string(N) << '\n';
+				ofile << "N=" + to_string((long long)N) << '\n';
 				ofile << "c=0.5" << '\n';
 				ofile << "k=8" << '\n';
 				ofile << "q=1" << '\n';
 				ofile << "t_max=20000000" << '\n';
-				ofile << "p=" + to_string((double(p)) / 20.0) << '\n';
+				ofile << "p=" + to_string((long double)(p / 20.0)) << '\n';
 				ofile << "folder=/home/joanna/workspace-cdt/network_sim/wyniki/same/" << '\n';
-				ofile << "filename=" + to_string(i) << '\n';
+				ofile << "filename=" + to_string((long long)i) << '\n';
 				ofile.close();
 			}
 		}

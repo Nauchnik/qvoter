@@ -123,6 +123,9 @@
     <ClInclude Include="..\network_sim.h" />
     <ClInclude Include="..\network_sim_parallel.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\Makefile" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

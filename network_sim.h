@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <ctime>
+#include <cmath>
 
 using namespace std;
 
@@ -24,15 +25,18 @@ struct single_measure {
 class network_simiulation_sequential
 {
 public:
+	network_simiulation_sequential();
 	string params_file_name;
 	unsigned int seed;
 	int N;
 	double c;
 	double k;
-	double p;
 	int q;
+	double p;
+	int realization;
 	int t_max;
 	string model;
+	string network_type;
 	string filename;
 	string folder;
 	string outname;
@@ -41,9 +45,11 @@ public:
 	vector<vector<int> > network;
 	vector<vector<double>> search_space_values;
 	vector<vector<double>> search_space_points;
+	int verbosity;
 
 	void ReadParams(const int argc, char **argv);
 	void Init();
+	void GetOutputName();
 	void LaunchSimulation();
 	void CreateGraphER();
 	int CreateNodesState();
@@ -67,7 +73,6 @@ protected:
 	void DynamicsQVoterSameAK(list<single_measure> &measure_list, int t_max,
 		vector<vector<int> > &network, vector<int> nodes_states, int N, int q,
 		double p);
-	void GenerateSearchSpace();
 };
 
 template< typename T >

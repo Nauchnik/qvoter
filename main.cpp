@@ -17,6 +17,22 @@ Oleg Zaikin, ITMO University
 
 int main(int argc, char **argv) 
 {
+#ifdef _MPI
+	int rank = 0;
+	int corecount = 1;
+
+	// parallel mode
+	MPI_Init(&argc, &argv);
+	MPI_Comm_size(MPI_COMM_WORLD, &corecount);
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	network_simiulation_parallel n_s_par;
+	n_s_par.verbosity = 0;
+	n_s_par.corecount = corecount;
+	n_s_par.rank = rank;
+	n_s_par.MPI_main();
+#else
+
 	if (argc < 11) {
 		cerr << "Usage: program model network N c k q p t_max folder filename [seed]" << "\n";
 		cerr << "--- few minutes execution ---\n"
@@ -35,17 +51,20 @@ int main(int argc, char **argv)
 
 	auto start = std::chrono::system_clock::now();
 
-	network_simiulation_sequential n_s_s;
-	n_s_s.ReadParams(argc, argv);
-	n_s_s.Init();
-	n_s_s.CreateGraphER();
-	n_s_s.CreateNodesState();
-	n_s_s.LaunchSimulation();
-	n_s_s.SaveMeasure();
+	network_simiulation_sequential n_s_seq;
+	n_s_seq.verbosity = 1;
+	n_s_seq.ReadParams(argc, argv);
+	n_s_seq.GetOutputName();
+	n_s_seq.Init();
+	n_s_seq.CreateGraphER();
+	n_s_seq.CreateNodesState();
+	n_s_seq.LaunchSimulation();
+	n_s_seq.SaveMeasure();
 
 	auto end = std::chrono::system_clock::now();
 	std::chrono::duration<double> elapsed_seconds = end - start;
 	std::cout << "elapsed time: " << elapsed_seconds.count() << " s\n";
+#endif
 
 	return 0;
 }
