@@ -107,7 +107,7 @@ void network_simiulation_parallel::controlProcess()
 			}
 			if (tasks_times[i] < 1e6)
 				ofile << " " << tasks_times[i] << " seconds\n";
-			else
+			else if (tasks_times[i] <= 0.0)
 				ofile << " -1\n";
 		}
 		ofile.close();
