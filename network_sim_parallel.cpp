@@ -5,7 +5,8 @@ const int TASK_LEN = 6;
 
 network_simiulation_parallel::network_simiulation_parallel() :
 	corecount(0),
-	rank(0)
+	rank(0),
+	network_size(0)
 {}
 
 void network_simiulation_parallel::MPI_main()
@@ -20,12 +21,14 @@ void network_simiulation_parallel::controlProcess()
 {
 #ifdef _MPI
 	MPI_Status status, cur_status;
-	mpi_start_time = MPI_Wtime();
+	double mpi_start_time = MPI_Wtime();
 
 	cout << endl << "control_process() started" << endl;
+	cout << "corecount " << corecount << endl;
+	cout << "rank " << rank << endl;
+	cout << "network_size " << network_size << endl;
 	
-	//N_vec.push_back(10000);
-	N_vec.push_back(100000);
+	N_vec.push_back(network_size);
 	c_vec.push_back(0.05);
 	c_vec.push_back(0.1);
 	c_vec.push_back(0.25);

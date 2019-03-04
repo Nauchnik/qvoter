@@ -15,7 +15,7 @@ public:
 	network_simiulation_parallel();
 	int corecount;
 	int rank;
-	double mpi_start_time;
+	int network_size;
 	vector<int> q_vec;
 	vector<double> k_vec;
 	vector<double> c_vec;
