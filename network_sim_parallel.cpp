@@ -108,10 +108,11 @@ void network_simiulation_parallel::controlProcess()
 				if (j < search_space_points[i].size() - 1)
 					ofile << "_";
 			}
-			if (tasks_times[i] < 1e6)
-				ofile << " " << tasks_times[i] << " seconds\n";
-			else if (tasks_times[i] <= 0.0)
-				ofile << " -1\n";
+			if ( (tasks_times[i] < 1e6) && (tasks_times[i] > 0.0) )
+				ofile << " " << tasks_times[i] << " seconds";
+			else
+				ofile << " -1";
+			ofile << "\n";
 		}
 		ofile.close();
 		
