@@ -19,11 +19,12 @@ void network_simiulation_sequential::ReadParams(const int argc, char **argv)
 	k = atof(argv[5]);
 	q = atoi(argv[6]);
 	p = atof(argv[7]);
-	t_max = atoi(argv[8]);
-	folder = argv[9];
-	filename = argv[10];
+	t0 = atoi(argv[8]);
+	t_max = atoi(argv[9]);
+	folder = argv[10];
+	filename = argv[11];
 
-	if (argc > 11) {
+	if (argc > 12) {
 		istringstream(argv[11]) >> seed;
 		cout << "seed " << seed << endl;
 	}
@@ -34,7 +35,7 @@ void network_simiulation_sequential::ReadParams(const int argc, char **argv)
 
 	cout << "seed " << seed << endl;
 	cout << "params: model-" << model << "  N-" << N << "  c-" << c << "  k-"
-		<< k << "  q-" << q << "  p-" << p << "  t_max-" << t_max
+		<< k << "  q-" << q << "  p-" << p << "  t0-" << t0<< "  t_max-" << t_max
 		<< "  filename-" << filename << "  folder-" << folder << "\n";
 }
 
@@ -56,19 +57,21 @@ void network_simiulation_sequential::Init()
 	srand(seed);
 	nodes_states.resize(N);
 	network.resize(N);
+
 }
 
 void network_simiulation_sequential::LaunchSimulation()
 {
+
 	if (model == "qvoter_same") {
-		DynamicsQVoterSame(measure_list, t_max, network, nodes_states, N, q, p);
+		DynamicsQVoterSame(t0, measure_list, t_max, network, nodes_states, N, q, p);
 	}
 	else if (model == "qvoter_random") {
-		DynamicsQVoterRandom(measure_list, t_max, network, nodes_states, N, q,
+		DynamicsQVoterRandom(t0, measure_list, t_max, network, nodes_states, N, q,
 			p);
 	}
 	else if (model == "qvoter_same_ak") {
-		DynamicsQVoterSameAK(measure_list, t_max, network, nodes_states, N, q,
+		DynamicsQVoterSameAK(t0, measure_list, t_max, network, nodes_states, N, q,
 			p);
 	}
 	else {
@@ -84,7 +87,7 @@ void network_simiulation_sequential::CreateGraphER()
 	double p = k / ((double)N - 1);
 	double r;
 	for (int i = 0; i < N; i++) {
-		for (int j = i; j < N; j++) {
+		for (int j = i+1; j < N; j++) { //i+1 - no self edges
 			r = ((double)rand()) / RAND_MAX;
 			if (r < p) {
 				network[i].push_back(j);
@@ -177,13 +180,13 @@ void network_simiulation_sequential::RewireToSame(vector < vector <int> > &netwo
 		if (nodes_states[network[basic_node][i]] == state_basic_nodes)
 			neighbor_in_the_same_state++;
 	}
-	int number_of_possible_nodes = inTheSameState - neighbor_in_the_same_state;
+	int number_of_possible_nodes = inTheSameState - neighbor_in_the_same_state-1;//minus 1 - we cannot add self edges
 	if (number_of_possible_nodes > 0) {
 		int rand_number = rand() % (number_of_possible_nodes);
 		int j = 0, new_neighbor = -1;
 		while (j <= rand_number) {
 			new_neighbor++;
-			if (nodes_states[new_neighbor] == state_basic_nodes && !isConnected(network, basic_node, new_neighbor))
+			if (nodes_states[new_neighbor] == state_basic_nodes && !isConnected(network, basic_node, new_neighbor) &&new_neighbor!=basic_node)
 				j++;
 		}
 
@@ -208,11 +211,11 @@ bool network_simiulation_sequential::CheckQpanel(vector<int> &qpanel, vector<int
 }
 
 //whole random qvoter model dynamics
-void network_simiulation_sequential::DynamicsQVoterRandom(list<single_measure> &measure_list, int t_max,
+void network_simiulation_sequential::DynamicsQVoterRandom(int t0, list<single_measure> &measure_list, int t_max,
 	vector<vector<int> > &network, vector<int> &nodes_states, int N, int q,
 	double p)
 {
-	int t = 0;
+	int t = t0;
 	vector<int> qpanel(q);
 	int basic_node, r1, old_neighbor;
 
@@ -254,11 +257,11 @@ void network_simiulation_sequential::DynamicsQVoterRandom(list<single_measure> &
 }
 
 //whole same qvoter model dynamics
-void network_simiulation_sequential::DynamicsQVoterSame(list<single_measure> &measure_list, int t_max,
+void network_simiulation_sequential::DynamicsQVoterSame(int t0, list<single_measure> &measure_list, int t_max,
 	vector<vector<int> > &network, vector<int> &nodes_states, int N, int q,
 	double p)
 {
-	int t = 0;
+	int t = t0;
 	vector<int> qpanel(q);
 	int basic_node, r1, old_neighbor, inTheSameState;
 	int number_of_plus_nodes = 0, number_of_minus_nodes = 0;
@@ -270,6 +273,8 @@ void network_simiulation_sequential::DynamicsQVoterSame(list<single_measure> &me
 	}
 	size_t size;
 	measure_list.push_back(Measure(nodes_states, N, network, t)); //, &E_int));
+
+
 	while ((t < t_max) && (measure_list.back().E_interface > 0)) { //E_int>0){
 		for (int microstep = 0; microstep < N; microstep++) {
 			basic_node = rand() % N;
@@ -317,15 +322,16 @@ void network_simiulation_sequential::DynamicsQVoterSame(list<single_measure> &me
 		if ( ((t % 100) == 0) && (verbosity > 0) )
 			cout << t << "\n";
 	}
+
 }
 
-void network_simiulation_sequential::DynamicsQVoterSameAK(list<single_measure> &measure_list, int t_max,
+void network_simiulation_sequential::DynamicsQVoterSameAK(int t0, list<single_measure> &measure_list, int t_max,
 	vector<vector<int> > &network, vector<int> nodes_states, int N, int q,
 	double p) 
 {
 	if (verbosity > 0)
 		cout << "ak" << '\n';
-	int t = 0;
+	int t = t0;
 	vector<int> qpanel(q);
 	int basic_node, r1, old_neighbor, inTheSameState, state, a;
 	int number_of_plus_nodes = 0, number_of_minus_nodes = 0;
@@ -459,3 +465,108 @@ void network_simiulation_sequential::GenerateParams()
 		}
 	}
 }
+
+
+void network_simiulation_sequential::SaveSimulationState(int step, string model, int number_of_plus_nodes, int number_of_minus_nodes)
+{
+	ofstream ofile(outname+"_state_in_step_"+to_string(step));
+	if(model=="qvoter_same" || model=="qvoter_same_ak"){
+		ofile << "#model\tq\tp\tN\tnumber_of_plus_nodes\tnumber_of_minus_nodes\tstep"<< '\n';
+		ofile << model<<"\t"<<q<<"\t"<<p<<"\t"<<N<<"\t"<<number_of_plus_nodes<<"\t"<<number_of_minus_nodes<<"\t"<<step<< '\n';
+	}else{
+		ofile << "#model\tq\tp\tN\tnumber_of_plus_nodes\tnumber_of_minus_nodes\tstep"<< '\n';
+		ofile << model<<"\t"<<q<<"\t"<<p<<"\t"<<N<<"\t"<<"xx"<<"\t"<<"xx"<<"\t"<<step<< '\n';
+
+	}
+	ofile<<"#node"<<"\t"<<"state"<<"\n";
+	for (int i=0; i< nodes_states.size();i++){
+		ofile<<i<<"\t"<<nodes_states[i]<<"\n";
+	}
+	ofile<<"edges"<<"\n";
+	cout<<network.size();
+	for(int i=0;i<network.size();i++){
+		for(int j=0; j<network[i].size();j++){
+			ofile<<i<<"\t"<<network[i][j]<<"\n";
+		}
+	}
+	ofile.close();
+}
+//not finished
+void network_simiulation_sequential::ReadSimulationState(string inname){
+//	int number_of_plus_nodes;
+//	int number_of_plus_nodes;
+//	  string line;
+//	  ifstream infile (inname);
+//	  if (infile.is_open())
+//	  {
+//		  getline (infile,line);
+//		  getline (infile,line);
+//		  cout<<line;
+//		  std::string delimiter = "\t";
+//		  size_t pos = 0;
+//		  std::string token;
+//
+//		  pos = line.find("\t");
+//	      token = line.substr(0, pos);
+//	      model = token;
+//	      line.erase(0, pos + delimiter.length());
+//
+//	      pos = line.find("\t");
+//	      token = line.substr(0, pos);
+//	      q = stoi(token);
+//	      line.erase(0, pos + delimiter.length());
+//
+//	      pos = line.find("\t");
+//	      token = line.substr(0, pos);
+//	      p = stof(token);
+//	      line.erase(0, pos + delimiter.length());
+//
+//	      pos = line.find("\t");
+//	      token = line.substr(0, pos);
+//	      N = stoi(token);
+//	      line.erase(0, pos + delimiter.length());
+//
+//		if( model=="qvoter_same" || model=="qvoter_same_ak"){
+//				  pos = line.find("\t");
+//				  token = line.substr(0, pos);
+//				  number_of_plus_nodes = stoi(token);
+//				  line.erase(0, pos + delimiter.length());
+//
+//
+//				  pos = line.find("\t");
+//				  token = line.substr(0, pos);
+//				  number_of_minus_nodes = stoi(token);
+//				  line.erase(0, pos + delimiter.length());
+//		}else{
+//			pos = line.find("\t");
+//			token = line.substr(0, pos);
+//			line.erase(0, pos + delimiter.length());
+//
+//			pos = line.find("\t");
+//			token = line.substr(0, pos);
+//			line.erase(0, pos + delimiter.length());
+//		}
+//	      pos = line.find("\t");
+//	      token = line.substr(0, pos);
+//	      t0 = stoi(token);
+//
+//		  getline (infile,line);
+//
+//		  for(int i=0; i<N;i++){
+//			  getline (infile,line);
+//
+//
+//		  }
+//
+//
+//
+//
+////	    while ( getline (infile,line) )
+////	    {
+////	      cout << line << '\n';
+////	    }
+//	    infile.close();
+//	  }
+//	  else cout << "Unable to open the file: "<<inname<<"\n";
+}
+

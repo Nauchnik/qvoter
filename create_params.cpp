@@ -23,7 +23,8 @@ void create_params() {
 				file << 8 << '\t'; //k
 				file << 1 << '\t'; //q
 				file << to_string((double(p))/20.0) << '\t'; //p
-				file << 2000000000 << '\t';
+				file << 0 << '\t'; //t0
+				file << 2000000000 << '\t'; //t_max
 				file << "/home/joanna/workspace-cdt/network_sim/wyniki/same_ak/" << '\t';
 				file << name<<i<< '\n';
 			}

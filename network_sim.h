@@ -34,6 +34,7 @@ public:
 	int q;
 	double p;
 	int realization;
+	int t0;
 	int t_max;
 	string model;
 	string network_type;
@@ -64,15 +65,17 @@ protected:
 	void GenerateParams();
 	void CreateParams();
 	bool isConnected(vector < vector <int> > &network, int node1, int node2);
-	void DynamicsQVoterRandom(list<single_measure> &measure_list, int t_max,
+	void DynamicsQVoterRandom(int t0, list<single_measure> &measure_list, int t_max,
 		vector<vector<int> > &network, vector<int> &nodes_states, int N, int q,
 		double p);
-	void DynamicsQVoterSame(list<single_measure> &measure_list, int t_max,
+	void DynamicsQVoterSame(int t0, list<single_measure> &measure_list, int t_max,
 		vector<vector<int> > &network, vector<int> &nodes_states, int N, int q,
 		double p);
-	void DynamicsQVoterSameAK(list<single_measure> &measure_list, int t_max,
+	void DynamicsQVoterSameAK(int t0, list<single_measure> &measure_list, int t_max,
 		vector<vector<int> > &network, vector<int> nodes_states, int N, int q,
 		double p);
+	void SaveSimulationState(int step, string type, int number_of_plus_nodes, int number_of_minus_nodes);
+	void ReadSimulationState(string inname);
 };
 
 template< typename T >
