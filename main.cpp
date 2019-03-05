@@ -21,6 +21,13 @@ int main(int argc, char **argv)
 	int rank = 0;
 	int corecount = 1;
 
+	if (argc < 2) {
+		cerr << "Usage: prog network-size\n";
+		exit(-1);
+	}
+
+	int network_size = atoi(argv[1]);
+
 	// parallel mode
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &corecount);
@@ -28,6 +35,7 @@ int main(int argc, char **argv)
 
 	network_simiulation_parallel n_s_par;
 	n_s_par.verbosity = 0;
+	n_s_par.network_size = network_size;
 	n_s_par.corecount = corecount;
 	n_s_par.rank = rank;
 	n_s_par.MPI_main();
