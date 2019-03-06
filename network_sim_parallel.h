@@ -16,6 +16,7 @@ public:
 	int corecount;
 	int rank;
 	int network_size;
+	int realizations;
 	vector<int> q_vec;
 	vector<double> k_vec;
 	vector<double> c_vec;

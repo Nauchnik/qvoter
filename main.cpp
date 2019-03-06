@@ -21,13 +21,14 @@ int main(int argc, char **argv)
 	int rank = 0;
 	int corecount = 1;
 
-	if (argc < 2) {
-		cerr << "Usage: prog network-size\n";
+	if (argc < 3) {
+		cerr << "Usage: prog network-size realizations\n";
 		exit(-1);
 	}
 
 	int network_size = atoi(argv[1]);
-
+	int realizations = atoi(argv[2]);
+	
 	// parallel mode
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &corecount);
@@ -36,13 +37,14 @@ int main(int argc, char **argv)
 	network_simiulation_parallel n_s_par;
 	n_s_par.verbosity = 0;
 	n_s_par.network_size = network_size;
+	n_s_par.realizations = realizations;
 	n_s_par.corecount = corecount;
 	n_s_par.rank = rank;
 	n_s_par.MPI_main();
 #else
 
-	if (argc < 11) {
-		cerr << "Usage: program model network N c k q p t_max folder filename [seed]" << "\n";
+	if (argc < 12) {
+		cerr << "Usage: program model network N c k q p t_0 t_max folder filename [seed]" << "\n";
 		cerr << "--- few minutes execution ---\n"
 			<< "model = qvoter_same\n"
 			<< "network = er\n"
@@ -51,12 +53,13 @@ int main(int argc, char **argv)
 			<< "k = 8\n"
 			<< "q = 1\n"
 			<< "p = 0.55\n"
+			<< "t0 = 0\n"
 			<< "t_max = 100000\n"
 			<< "folder = ./\n"
 			<< "filename = 1\n";
 		exit(-1);
 	}
-
+	
 	auto start = std::chrono::system_clock::now();
 
 	network_simiulation_sequential n_s_seq;

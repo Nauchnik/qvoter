@@ -3,6 +3,7 @@
 #include <sstream>
 
 network_simiulation_sequential::network_simiulation_sequential() :
+	t0(0),
 	t_max(1000000000),
 	folder(""),
 	filename(""),
@@ -25,7 +26,7 @@ void network_simiulation_sequential::ReadParams(const int argc, char **argv)
 	filename = argv[11];
 
 	if (argc > 12) {
-		istringstream(argv[11]) >> seed;
+		istringstream(argv[12]) >> seed;
 		cout << "seed " << seed << endl;
 	}
 	else {
@@ -35,7 +36,7 @@ void network_simiulation_sequential::ReadParams(const int argc, char **argv)
 
 	cout << "seed " << seed << endl;
 	cout << "params: model-" << model << "  N-" << N << "  c-" << c << "  k-"
-		<< k << "  q-" << q << "  p-" << p << "  t0-" << t0<< "  t_max-" << t_max
+		<< k << "  q-" << q << "  p-" << p << " t0-" << t0 << "  t_max-" << t_max
 		<< "  filename-" << filename << "  folder-" << folder << "\n";
 }
 

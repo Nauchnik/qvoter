@@ -6,7 +6,8 @@ const int TASK_LEN = 6;
 network_simiulation_parallel::network_simiulation_parallel() :
 	corecount(0),
 	rank(0),
-	network_size(0)
+	network_size(0),
+	realizations(10)
 {}
 
 void network_simiulation_parallel::MPI_main()
@@ -27,6 +28,7 @@ void network_simiulation_parallel::controlProcess()
 	cout << "corecount " << corecount << endl;
 	cout << "rank " << rank << endl;
 	cout << "network_size " << network_size << endl;
+	cout << "realizations " << realizations << endl;
 	
 	N_vec.push_back(network_size);
 	c_vec.push_back(0.05);
@@ -39,7 +41,7 @@ void network_simiulation_parallel::controlProcess()
 	q_vec.push_back(1);
 	for (int i = 0; i < 20; i++) // p = {0.0, 0.05, 0.1, ..., 0.95, 1.0}
 		p_vec.push_back((double)i*0.05);
-	for (int i = 0; i < 10; i++)
+	for (int i = 0; i < realizations; i++)
 		realization_vec.push_back(i);
 	
 	vector<vector<double>> search_space_params(6);
