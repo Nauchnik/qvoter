@@ -55,11 +55,10 @@ void network_simiulation_sequential::GetOutputName()
 
 void network_simiulation_sequential::Init()
 {
-ReadSimulationState("qvoter_same_q-2_k-8_c-0.5_N-10_p-0_test_r--1387736016_seed-1_state_in_step_2");
+	//ReadSimulationState("qvoter_same_q-2_k-8_c-0.5_N-10_p-0_test_r--1387736016_seed-1_state_in_step_2");
 	srand(seed);
 	nodes_states.resize(N);
 	network.resize(N);
-
 }
 
 void network_simiulation_sequential::LaunchSimulation()
@@ -472,7 +471,7 @@ void network_simiulation_sequential::GenerateParams()
 
 void network_simiulation_sequential::SaveSimulationState(int step, string model, int number_of_plus_nodes, int number_of_minus_nodes)
 {
-	ofstream ofile(outname+"_state_in_step_"+to_string(step));
+	ofstream ofile(outname+"_state_in_step_"+to_string((long long)step));
 	if(model=="qvoter_same" || model=="qvoter_same_ak"){
 		ofile << "#model\tq\tp\tN\tnumber_of_plus_nodes\tnumber_of_minus_nodes\tstep"<< '\n';
 		ofile << model<<"\t"<<q<<"\t"<<p<<"\t"<<N<<"\t"<<number_of_plus_nodes<<"\t"<<number_of_minus_nodes<<"\t"<<step<< '\n';
