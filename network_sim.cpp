@@ -55,6 +55,7 @@ void network_simiulation_sequential::GetOutputName()
 
 void network_simiulation_sequential::Init()
 {
+ReadSimulationState("qvoter_same_q-2_k-8_c-0.5_N-10_p-0_test_r--1387736016_seed-1_state_in_step_2");
 	srand(seed);
 	nodes_states.resize(N);
 	network.resize(N);
@@ -323,6 +324,7 @@ void network_simiulation_sequential::DynamicsQVoterSame(int t0, list<single_meas
 		if ( ((t % 100) == 0) && (verbosity > 0) )
 			cout << t << "\n";
 	}
+//SaveSimulationState(t,  model,  number_of_plus_nodes,  number_of_minus_nodes);
 
 }
 
@@ -492,82 +494,67 @@ void network_simiulation_sequential::SaveSimulationState(int step, string model,
 	}
 	ofile.close();
 }
+
+std::vector<std::string> network_simiulation_sequential::split(const std::string& s, char delimiter)
+{
+   std::vector<std::string> tokens;
+   std::string token;
+   std::istringstream tokenStream(s);
+   while (std::getline(tokenStream, token, delimiter))
+   {
+      tokens.push_back(token);
+   }
+   return tokens;
+}
+
 //not finished
 void network_simiulation_sequential::ReadSimulationState(string inname){
-//	int number_of_plus_nodes;
-//	int number_of_plus_nodes;
-//	  string line;
-//	  ifstream infile (inname);
-//	  if (infile.is_open())
-//	  {
-//		  getline (infile,line);
-//		  getline (infile,line);
-//		  cout<<line;
-//		  std::string delimiter = "\t";
-//		  size_t pos = 0;
-//		  std::string token;
-//
-//		  pos = line.find("\t");
-//	      token = line.substr(0, pos);
-//	      model = token;
-//	      line.erase(0, pos + delimiter.length());
-//
-//	      pos = line.find("\t");
-//	      token = line.substr(0, pos);
-//	      q = stoi(token);
-//	      line.erase(0, pos + delimiter.length());
-//
-//	      pos = line.find("\t");
-//	      token = line.substr(0, pos);
-//	      p = stof(token);
-//	      line.erase(0, pos + delimiter.length());
-//
-//	      pos = line.find("\t");
-//	      token = line.substr(0, pos);
-//	      N = stoi(token);
-//	      line.erase(0, pos + delimiter.length());
-//
-//		if( model=="qvoter_same" || model=="qvoter_same_ak"){
-//				  pos = line.find("\t");
-//				  token = line.substr(0, pos);
-//				  number_of_plus_nodes = stoi(token);
-//				  line.erase(0, pos + delimiter.length());
-//
-//
-//				  pos = line.find("\t");
-//				  token = line.substr(0, pos);
-//				  number_of_minus_nodes = stoi(token);
-//				  line.erase(0, pos + delimiter.length());
-//		}else{
-//			pos = line.find("\t");
-//			token = line.substr(0, pos);
-//			line.erase(0, pos + delimiter.length());
-//
-//			pos = line.find("\t");
-//			token = line.substr(0, pos);
-//			line.erase(0, pos + delimiter.length());
+	int number_of_plus_nodes, number_of_minus_nodes;
+	string line;
+	ifstream infile(inname);
+
+	if (infile.is_open()) {
+		getline(infile, line);
+		getline(infile, line);
+		std::vector < std::string > arr = split(line, '\t');
+		model = arr[0];
+		q = stoi(arr[1]);
+		p = stof(arr[2]);
+		N = stoi(arr[3]);
+
+		if (model == "qvoter_same" || model == "qvoter_same_ak") {
+			number_of_plus_nodes = stoi(arr[4]);
+			number_of_minus_nodes = stoi(arr[5]);
+		}
+		t0 = stoi(arr[6]);
+		cout << "model: " << model << "\t" << "q: " << q << "\t" << "p: " << p
+				<< "\t" << "N: " << N << "\n";
+		getline(infile, line);
+		nodes_states.resize(N);
+		network.resize(N);
+
+		for (int i = 0; i < N; i++) {
+			getline(infile, line);
+			arr = split(line, '\t');
+			nodes_states[stoi(arr[0])] = stoi(arr[1]);
+		}
+//		for (int i = 0; i < N; i++) {
+//			cout << i << "   " << nodes_states[i] << "\n";
 //		}
-//	      pos = line.find("\t");
-//	      token = line.substr(0, pos);
-//	      t0 = stoi(token);
-//
-//		  getline (infile,line);
-//
-//		  for(int i=0; i<N;i++){
-//			  getline (infile,line);
-//
-//
-//		  }
-//
-//
-//
-//
-////	    while ( getline (infile,line) )
-////	    {
-////	      cout << line << '\n';
-////	    }
-//	    infile.close();
-//	  }
-//	  else cout << "Unable to open the file: "<<inname<<"\n";
+		getline(infile, line);
+		while (getline(infile, line)) {
+			arr = split(line, '\t');
+			network[stoi(arr[0])].push_back(stoi(arr[1]));
+		}
+
+//		for (int i = 0; i < network.size(); i++) {
+//			for (int j = 0; j < network[i].size(); j++) {
+//				cout << i << "   " << network[i][j] << "\n";
+//			}
+//		}
+
+		infile.close();
+	} else
+		cout << "Unable to open the file: " << inname << "\n";
 }
 

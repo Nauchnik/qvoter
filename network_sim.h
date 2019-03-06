@@ -76,6 +76,7 @@ protected:
 		double p);
 	void SaveSimulationState(int step, string type, int number_of_plus_nodes, int number_of_minus_nodes);
 	void ReadSimulationState(string inname);
+	std::vector<std::string> split(const std::string& s, char delimiter);
 };
 
 template< typename T >
