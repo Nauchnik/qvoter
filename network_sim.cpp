@@ -7,7 +7,8 @@ network_simiulation_sequential::network_simiulation_sequential() :
 	t_max(1000000000),
 	folder(""),
 	filename(""),
-	seed(-1)
+	seed(-1),
+	realization(0)
 {}
 
 void network_simiulation_sequential::ReadParams(const int argc, char **argv)
