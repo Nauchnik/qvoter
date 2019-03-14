@@ -1,6 +1,10 @@
 #ifndef network_sim_h
 #define network_sim_h
 
+#ifdef _MPI
+#include <mpi.h>
+#endif
+
 #include <vector>
 #include <string>
 #include <list>
@@ -10,6 +14,8 @@
 #include <sstream>
 #include <ctime>
 #include <cmath>
+
+const int MAX_SOLVING_TIME_SEC = 172800;
 
 using namespace std;
 
@@ -36,6 +42,8 @@ public:
 	int realization;
 	int t0;
 	int t_max;
+	int status;
+	double start_time;
 	string model;
 	string network_type;
 	string filename;

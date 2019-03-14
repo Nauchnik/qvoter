@@ -8,7 +8,14 @@
 #include "network_sim.h"
 
 #define point vector<double>
-const int MAX_SOLVING_TIME_SEC = 172800;
+
+struct task
+{
+	int status;
+	double solving_time;
+	string out_file_name;
+	point task_point;
+};
 
 class network_simiulation_parallel: public network_simiulation_sequential
 {

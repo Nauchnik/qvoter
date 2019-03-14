@@ -8,7 +8,9 @@ network_simiulation_sequential::network_simiulation_sequential() :
 	folder(""),
 	filename(""),
 	seed(-1),
-	realization(0)
+	realization(0),
+	status(-1),
+	start_time(0.0)
 {}
 
 void network_simiulation_sequential::ReadParams(const int argc, char **argv)
@@ -276,7 +278,6 @@ void network_simiulation_sequential::DynamicsQVoterSame(int t0, list<single_meas
 	size_t size;
 	measure_list.push_back(Measure(nodes_states, N, network, t)); //, &E_int));
 
-
 	while ((t < t_max) && (measure_list.back().E_interface > 0)) { //E_int>0){
 		for (int microstep = 0; microstep < N; microstep++) {
 			basic_node = rand() % N;
@@ -321,13 +322,18 @@ void network_simiulation_sequential::DynamicsQVoterSame(int t0, list<single_meas
 		}
 		t++;
 		measure_list.push_back(Measure(nodes_states, N, network, t)); //, &E_int));
-		if ( ((t % 100) == 0) && (verbosity > 0) )
+		if ((verbosity > 0) && (t % 100 == 0))
 			cout << t << "\n";
-	}
 #ifdef _MPI
-	start_time = MPI_Wtime();
-	SaveSimulationState(t, model, number_of_plus_nodes, number_of_minus_nodes);
+		if (MPI_Wtime() - start_time >= MAX_SOLVING_TIME_SEC) {
+			status = -2; // interrupted
+			SaveSimulationState(t, model, number_of_plus_nodes, number_of_minus_nodes);
+			break;
+		}
 #endif
+	}
+	if (status != -2) // if not interrupted
+		status = 1; // then solved
 }
 
 void network_simiulation_sequential::DynamicsQVoterSameAK(int t0, list<single_measure> &measure_list, int t_max,
@@ -488,7 +494,8 @@ void network_simiulation_sequential::SaveSimulationState(int step, string model,
 		ofile<<i<<"\t"<<nodes_states[i]<<"\n";
 	}
 	ofile<<"edges"<<"\n";
-	cout<<network.size();
+	if (verbosity > 0)
+		cout<<network.size();
 	for(int i=0;i<network.size();i++){
 		for(int j=0; j<network[i].size();j++){
 			ofile<<i<<"\t"<<network[i][j]<<"\n";
@@ -556,7 +563,10 @@ void network_simiulation_sequential::ReadSimulationState(string inname){
 //		}
 
 		infile.close();
-	} else
-		cout << "Unable to open the file: " << inname << "\n";
+	}
+	else {
+		cerr << "Unable to open the file: " << inname << "\n";
+		exit(-1);
+	}
 }
 

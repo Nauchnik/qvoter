@@ -70,69 +70,127 @@ void network_simiulation_parallel::controlProcess()
 	}
 
 	vector<point> search_space_points = generateSearchSpace(search_space_params);
-	vector<double> tasks_times(search_space_points.size());
-	for (auto x : tasks_times)
-		x = -1.0;
 	cout << "search space size : " << search_space_points.size() << endl;
 
-	cout << "corecount " << corecount << endl;
-	cout << "first " << corecount << " points from the search space :\n";
-	for (int i = 0; i < corecount; i++) {
-		for (auto y : search_space_points[i])
-			cout << y << " ";
-		cout << "\n";
+	string tasks_times_file_name = "tasks_times_out";
+	ifstream tasks_file(tasks_times_file_name);
+	
+	vector<task> tasks_vec;
+	if (tasks_file.is_open()) {
+		cout << "opened tasks file " << tasks_times_file_name << endl;
+		string str, word1, word2;
+		task cur_task;
+		while (getline(tasks_file, str)) {
+			if (str.size() < 2)
+				continue;
+			stringstream sstream;
+			sstream << str;
+			sstream >> word1 >> word2;
+			cur_task.solving_time = -1.0;
+			if ( (word2 == "-1") || (word2 == "0") )
+				cur_task.status = -1; // not launched
+			else if (word2 == "-2")
+				cur_task.status = -2; // interrupted
+			else {
+				cur_task.status = 1; // solved
+				istringstream(word2) >> cur_task.solving_time;
+			}
+			cur_task.out_file_name = "";
+			tasks_vec.push_back(cur_task);
+		}
+		cout << "tasks_vec.size() " << tasks_vec.size() << endl;
+		cout << "first 20 tasks statuses and times: \n";
+		for (unsigned i=0; i<20; i++)
+			cout << tasks_vec[i].status << " " << tasks_vec[i].solving_time << endl;
 	}
+	else {
+		tasks_vec.resize(search_space_points.size());
+		for (auto x : tasks_vec)
+			x.status = -1;
+	}
+	tasks_file.close();
+
+	if (search_space_points.size() != tasks_vec.size()) {
+		cerr << "search_space_points.size() != tasks_vec.size()" << endl;
+		cerr << search_space_points.size() << " != " << tasks_vec.size() << endl;
+		MPI_Abort(MPI_COMM_WORLD, 0);
+	}
+	for (unsigned i = 0; i < search_space_points.size(); i++)
+		tasks_vec[i].task_point = search_space_points[i];
+	search_space_points.clear();
+	
+	cout << "corecount " << corecount << endl;
 	
 	double *task = new double[TASK_LEN];
 	int task_index_for_sending = 0;
+	int skipped_tasks = 0;
 
 	// sending first part of tasks
 	for (int computing_process_index = 1; computing_process_index < corecount; computing_process_index++) {
-		for (unsigned j = 0; j < search_space_points[task_index_for_sending].size(); j++)
-			task[j] = search_space_points[task_index_for_sending][j];
+		while (tasks_vec[task_index_for_sending].status == 1) {
+			task_index_for_sending++;
+			skipped_tasks++;
+		}
+		for (unsigned j = 0; j < tasks_vec[task_index_for_sending].task_point.size(); j++)
+			task[j] = tasks_vec[task_index_for_sending].task_point[j];
 		MPI_Send(&task_index_for_sending, 1, MPI_INT, computing_process_index, 0, MPI_COMM_WORLD);
 		MPI_Send(task, TASK_LEN, MPI_DOUBLE, computing_process_index, 0, MPI_COMM_WORLD);
-		tasks_times[task_index_for_sending] = MPI_Wtime();
+		tasks_vec[task_index_for_sending].solving_time = MPI_Wtime();
 		task_index_for_sending++;
 	}
+	cout << skipped_tasks << " tasks were skipped" << endl;
 	cout << task_index_for_sending << " tasks were sent" << endl;
-
+	
 	int processed_task_count = 0;
 	int received_task_index = -1;
 	int stop_message = -1;
-	string tasks_times_file_name = "tasks_times_out";
+	int task_status = -1;
 	
-	while (processed_task_count < search_space_points.size()) {
+	while (processed_task_count + skipped_tasks < tasks_vec.size()) {
 		MPI_Recv(&received_task_index, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+		MPI_Recv(&task_status, 1, MPI_INT, status.MPI_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 		processed_task_count++;
-		tasks_times[received_task_index] = MPI_Wtime() - tasks_times[received_task_index];
-
+		tasks_vec[received_task_index].solving_time = MPI_Wtime() - tasks_vec[received_task_index].solving_time;
+		tasks_vec[received_task_index].status = task_status;
+		//cout << "task_index " << received_task_index << endl;
+		//cout << "solving_time " << tasks_vec[received_task_index].solving_time << endl;
+		//cout << "task_status " << task_status << endl;
+		
 		ofstream ofile(tasks_times_file_name, ios_base::out);
-		for (unsigned i=0; i<search_space_points.size(); i++) {
-			for (unsigned j = 0; j < search_space_points[i].size(); j++) {
-				ofile << search_space_points[i][j];
-				if (j < search_space_points[i].size() - 1)
+		for (unsigned i=0; i< tasks_vec.size(); i++) {
+			for (unsigned j = 0; j < tasks_vec[i].task_point.size(); j++) {
+				ofile << tasks_vec[i].task_point[j];
+				if (j < tasks_vec[i].task_point.size() - 1)
 					ofile << "_";
 			}
-			if ( (tasks_times[i] < 1e6) && (tasks_times[i] > 0.0) )
-				ofile << " " << tasks_times[i] << " seconds";
+			//if ( (tasks_vec[i].solving_time < 1e6) && (tasks_vec[i].solving_time > 0.0) )
+			if ((tasks_vec[i].status == 1) && (tasks_vec[i].solving_time < 1e6) && (tasks_vec[i].solving_time > 0.0))
+				ofile << " " << tasks_vec[i].solving_time << " seconds";
 			else
-				ofile << " -1";
+				ofile << " " << tasks_vec[i].status;
+			//else
+			//	ofile << " -1";
 			ofile << "\n";
 		}
 		ofile.close();
 		
-		cout << "processed_task_count " << processed_task_count;
+		cout << "processed_task_count=" << processed_task_count;
+		cout << " , skipped_tasks=" << skipped_tasks;
 		cout << " , time from start " << MPI_Wtime() - mpi_start_time << " s" << endl;
 		
-		if (task_index_for_sending >= search_space_points.size())
+		while (tasks_vec[task_index_for_sending].status == 1) {
+			task_index_for_sending++;
+			skipped_tasks++;
+		}
+		
+		if (task_index_for_sending >= tasks_vec.size())
 			MPI_Send(&stop_message, 1, MPI_INT, status.MPI_SOURCE, 0, MPI_COMM_WORLD);
 		else {
-			for (unsigned j = 0; j < search_space_points[task_index_for_sending].size(); j++)
-				task[j] = search_space_points[task_index_for_sending][j];
+			for (unsigned j = 0; j < tasks_vec[task_index_for_sending].task_point.size(); j++)
+				task[j] = tasks_vec[task_index_for_sending].task_point[j];
 			MPI_Send(&task_index_for_sending, 1, MPI_INT, status.MPI_SOURCE, 0, MPI_COMM_WORLD);
 			MPI_Send(task, TASK_LEN, MPI_DOUBLE, status.MPI_SOURCE, 0, MPI_COMM_WORLD);
-			tasks_times[task_index_for_sending] = MPI_Wtime();
+			tasks_vec[task_index_for_sending].solving_time = MPI_Wtime();
 			task_index_for_sending++;
 		}
 	}
@@ -154,7 +212,7 @@ vector<point> network_simiulation_parallel::generateSearchSpace(vector<vector<do
 
 void network_simiulation_parallel::computingProcess()
 {
-	cout << "computingProcess()\n";
+	//cout << "computingProcess()\n";
 	double *task = new double[TASK_LEN];
 	int task_index = -1;
 #ifdef _MPI
@@ -185,15 +243,18 @@ void network_simiulation_parallel::computingProcess()
 		n_s_seq.N = (int)task[3];
 		n_s_seq.p = task[4];
 		n_s_seq.realization = (int)task[5];
-
+		
+		n_s_seq.start_time = MPI_Wtime();
 		n_s_seq.GetOutputName();
 		n_s_seq.Init();
 		n_s_seq.CreateGraphER();
 		n_s_seq.CreateNodesState();
 		n_s_seq.LaunchSimulation();
-		n_s_seq.SaveMeasure();
-
-		MPI_Send(&task_index, 1, MPI_UNSIGNED, 0, 0, MPI_COMM_WORLD);
+		if (n_s_seq.status == 1) // if solved
+			n_s_seq.SaveMeasure();
+		
+		MPI_Send(&task_index, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+		MPI_Send(&n_s_seq.status, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 	}
 
 	delete[] task;
