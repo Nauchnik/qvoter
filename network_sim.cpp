@@ -324,8 +324,10 @@ void network_simiulation_sequential::DynamicsQVoterSame(int t0, list<single_meas
 		if ( ((t % 100) == 0) && (verbosity > 0) )
 			cout << t << "\n";
 	}
-//SaveSimulationState(t,  model,  number_of_plus_nodes,  number_of_minus_nodes);
-
+#ifdef _MPI
+	start_time = MPI_Wtime();
+	SaveSimulationState(t, model, number_of_plus_nodes, number_of_minus_nodes);
+#endif
 }
 
 void network_simiulation_sequential::DynamicsQVoterSameAK(int t0, list<single_measure> &measure_list, int t_max,

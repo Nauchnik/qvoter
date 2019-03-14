@@ -7,11 +7,15 @@ network_simiulation_parallel::network_simiulation_parallel() :
 	corecount(0),
 	rank(0),
 	network_size(0),
-	realizations(10)
+	realizations(10),
+	start_time(-1)
 {}
 
 void network_simiulation_parallel::MPI_main()
 {
+#ifdef _MPI
+	start_time = MPI_Wtime();
+#endif
 	if (rank == 0)
 		controlProcess();
 	else if (rank > 0)

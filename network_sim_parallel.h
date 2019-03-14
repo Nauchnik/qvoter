@@ -8,6 +8,7 @@
 #include "network_sim.h"
 
 #define point vector<double>
+const int MAX_SOLVING_TIME_SEC = 172800;
 
 class network_simiulation_parallel: public network_simiulation_sequential
 {
@@ -30,6 +31,7 @@ private:
 	void controlProcess();
 	vector<point> generateSearchSpace(vector<vector<double>> search_space_values);
 	void computingProcess();
+	double start_time;
 };
 
 #endif
