@@ -460,7 +460,7 @@ void network_simiulation_sequential::GenerateParams()
 			for (int i = 0; i < 1000; i++) {
 				string ofile_name = catalogue + name + to_string((long long)i) + "-" 
 					+ to_string((long long)p) + "-" + to_string((long long)N);
-				std::ofstream ofile(ofile_name);
+				ofstream ofile(ofile_name);
 				ofile << "model=qvoter_same" << '\n';
 				ofile << "network=er" << '\n';
 				ofile << "N=" + to_string((long long)N) << '\n';
@@ -487,7 +487,6 @@ void network_simiulation_sequential::SaveSimulationState(int step, string model,
 	}else{
 		ofile << "#model\tq\tp\tN\tnumber_of_plus_nodes\tnumber_of_minus_nodes\tstep"<< '\n';
 		ofile << model<<"\t"<<q<<"\t"<<p<<"\t"<<N<<"\t"<<"xx"<<"\t"<<"xx"<<"\t"<<step<< '\n';
-
 	}
 	ofile<<"#node"<<"\t"<<"state"<<"\n";
 	for (int i=0; i< nodes_states.size();i++){
@@ -504,57 +503,62 @@ void network_simiulation_sequential::SaveSimulationState(int step, string model,
 	ofile.close();
 }
 
-std::vector<std::string> network_simiulation_sequential::split(const std::string& s, char delimiter)
+vector<string> network_simiulation_sequential::split(const string& s, char delimiter)
 {
-   std::vector<std::string> tokens;
-   std::string token;
-   std::istringstream tokenStream(s);
-   while (std::getline(tokenStream, token, delimiter))
+   vector<string> tokens;
+   string token;
+   istringstream tokenStream(s);
+   while (getline(tokenStream, token, delimiter))
    {
       tokens.push_back(token);
    }
    return tokens;
 }
 
-//not finished
-void network_simiulation_sequential::ReadSimulationState(string inname){
+// not finished
+void network_simiulation_sequential::ReadSimulationState(string inname)
+{
 	int number_of_plus_nodes, number_of_minus_nodes;
 	string line;
 	ifstream infile(inname);
 
-	if (infile.is_open()) {
-		getline(infile, line);
-		getline(infile, line);
-		std::vector < std::string > arr = split(line, '\t');
-		model = arr[0];
-		q = stoi(arr[1]);
-		p = stof(arr[2]);
-		N = stoi(arr[3]);
+	if (!infile.is_open()) {
+		cerr << "Unable to open the file: " << inname << "\n";
+		exit(-1);
+	}
 
-		if (model == "qvoter_same" || model == "qvoter_same_ak") {
-			number_of_plus_nodes = stoi(arr[4]);
-			number_of_minus_nodes = stoi(arr[5]);
-		}
-		t0 = stoi(arr[6]);
-		cout << "model: " << model << "\t" << "q: " << q << "\t" << "p: " << p
-				<< "\t" << "N: " << N << "\n";
-		getline(infile, line);
-		nodes_states.resize(N);
-		network.resize(N);
+	getline(infile, line);
+	getline(infile, line);
+	vector < string > arr = split(line, '\t');
+	model = arr[0];
+	q = stoi(arr[1]);
+	p = stof(arr[2]);
+	N = stoi(arr[3]);
 
-		for (int i = 0; i < N; i++) {
-			getline(infile, line);
-			arr = split(line, '\t');
-			nodes_states[stoi(arr[0])] = stoi(arr[1]);
-		}
+	if (model == "qvoter_same" || model == "qvoter_same_ak") {
+		number_of_plus_nodes = stoi(arr[4]);
+		number_of_minus_nodes = stoi(arr[5]);
+	}
+	t0 = stoi(arr[6]);
+	cout << "model: " << model << "\t" << "q: " << q << "\t" << "p: " << p
+			<< "\t" << "N: " << N << "\n";
+	getline(infile, line);
+	nodes_states.resize(N);
+	network.resize(N);
+
+	for (int i = 0; i < N; i++) {
+		getline(infile, line);
+		arr = split(line, '\t');
+		nodes_states[stoi(arr[0])] = stoi(arr[1]);
+	}
 //		for (int i = 0; i < N; i++) {
 //			cout << i << "   " << nodes_states[i] << "\n";
 //		}
-		getline(infile, line);
-		while (getline(infile, line)) {
-			arr = split(line, '\t');
-			network[stoi(arr[0])].push_back(stoi(arr[1]));
-		}
+	getline(infile, line);
+	while (getline(infile, line)) {
+		arr = split(line, '\t');
+		network[stoi(arr[0])].push_back(stoi(arr[1]));
+	}
 
 //		for (int i = 0; i < network.size(); i++) {
 //			for (int j = 0; j < network[i].size(); j++) {
@@ -562,11 +566,6 @@ void network_simiulation_sequential::ReadSimulationState(string inname){
 //			}
 //		}
 
-		infile.close();
-	}
-	else {
-		cerr << "Unable to open the file: " << inname << "\n";
-		exit(-1);
-	}
+	infile.close();
 }
 

@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 		exit(-1);
 	}
 	
-	auto start = std::chrono::system_clock::now();
+	auto start = chrono::system_clock::now();
 
 	network_simiulation_sequential n_s_seq;
 	n_s_seq.verbosity = 1;
@@ -72,9 +72,9 @@ int main(int argc, char **argv)
 	n_s_seq.LaunchSimulation();
 	n_s_seq.SaveMeasure();
 
-	auto end = std::chrono::system_clock::now();
-	std::chrono::duration<double> elapsed_seconds = end - start;
-	std::cout << "elapsed time: " << elapsed_seconds.count() << " s\n";
+	auto end = chrono::system_clock::now();
+	chrono::duration<double> elapsed_seconds = end - start;
+	cout << "elapsed time: " << elapsed_seconds.count() << " s\n";
 #endif
 
 	return 0;

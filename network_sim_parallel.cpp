@@ -152,9 +152,9 @@ void network_simiulation_parallel::controlProcess()
 		processed_task_count++;
 		tasks_vec[received_task_index].solving_time = MPI_Wtime() - tasks_vec[received_task_index].solving_time;
 		tasks_vec[received_task_index].status = task_status;
-		//cout << "task_index " << received_task_index << endl;
-		//cout << "solving_time " << tasks_vec[received_task_index].solving_time << endl;
-		//cout << "task_status " << task_status << endl;
+		cout << "task_index " << received_task_index << endl;
+		cout << "solving_time " << tasks_vec[received_task_index].solving_time << endl;
+		cout << "task_status " << task_status << endl;
 		
 		ofstream ofile(tasks_times_file_name, ios_base::out);
 		for (unsigned i=0; i< tasks_vec.size(); i++) {
