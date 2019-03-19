@@ -43,6 +43,12 @@ int main(int argc, char **argv)
 	n_s_par.MPI_main();
 #else
 
+#ifdef _DEBUG
+	network_simiulation_sequential n_s_seq_tmp;
+	n_s_seq_tmp.outname = "qvoter_same_q-1_k-4_c-0.1_N-100000_p-0.25_r-6_seed-2330417661";
+	string step_file_name = n_s_seq_tmp.FindStateFileName();
+#endif
+
 	if (argc < 12) {
 		cerr << "Usage: program model network N c k q p t_0 t_max folder filename [seed]" << "\n";
 		cerr << "--- few minutes execution ---\n"

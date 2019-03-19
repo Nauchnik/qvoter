@@ -2,6 +2,12 @@
 
 #include <sstream>
 
+#ifdef _WIN32
+#include "dirent.h"
+#else
+#include <dirent.h>
+#endif
+
 network_simiulation_sequential::network_simiulation_sequential() :
 	t0(0),
 	t_max(1000000000),
@@ -10,7 +16,8 @@ network_simiulation_sequential::network_simiulation_sequential() :
 	seed(-1),
 	realization(0),
 	status(-1),
-	start_time(0.0)
+	start_time(0.0),
+	previous_launches_count(0)
 {}
 
 void network_simiulation_sequential::ReadParams(const int argc, char **argv)
@@ -569,5 +576,80 @@ void network_simiulation_sequential::ReadSimulationState(string inname)
 //		}
 
 	infile.close();
+}
+
+// execute command via system process
+string network_simiulation_sequential::exec(string cmd_str)
+{
+	string result = "";
+	char* cmd = new char[cmd_str.size() + 1];
+	for (unsigned i = 0; i < cmd_str.size(); i++)
+		cmd[i] = cmd_str[i];
+	cmd[cmd_str.size()] = '\0';
+#ifdef _WIN32
+	FILE* pipe = _popen(cmd, "r");
+#else
+	FILE* pipe = popen(cmd, "r");
+#endif
+	delete[] cmd;
+	if (!pipe) return "ERROR";
+	char buffer[128];
+	while (!feof(pipe)) {
+		if (fgets(buffer, 128, pipe) != NULL)
+			result += buffer;
+	}
+#ifdef _WIN32
+	_pclose(pipe);
+#else
+	pclose(pipe);
+#endif
+	return result;
+}
+
+void network_simiulation_sequential::getdir(string dir, vector<string> &files)
+{
+	DIR *dp;
+	string cur_name;
+	struct dirent *dirp;
+	if ((dp = opendir(dir.c_str())) == NULL) {
+		cerr << endl << "Error in opening folder " << dir << endl;
+		exit(-1);
+	}
+	while ((dirp = readdir(dp)) != NULL) {
+		cur_name = string(dirp->d_name);
+		if (cur_name[0] != '.')
+			files.push_back(cur_name);
+	}
+	closedir(dp);
+}
+
+string network_simiulation_sequential::FindStateFileName()
+{
+	string result = "";
+	vector<string> files_names = vector<string>();
+#ifdef WIN32
+	string cur_path = "./";
+#else
+	string cur_path = exec("echo $PWD");
+#endif
+	cur_path.erase(remove(cur_path.begin(), cur_path.end(), '\r'), cur_path.end());
+	cur_path.erase(remove(cur_path.begin(), cur_path.end(), '\n'), cur_path.end());
+	getdir(cur_path, files_names);
+	int max_state_in_step = -1;
+	for (auto file_name : files_names) {
+		size_t pos1 = file_name.find(outname);
+		size_t pos2 = file_name.find("state_in_step_");
+		if ((pos1 != string::npos) && (pos2 != string::npos)) {
+			previous_launches_count++;
+			string sstr = file_name.substr(pos2 + 14);
+			int cur_state_in_step = -1;
+			istringstream(sstr) >> cur_state_in_step;
+			if ((cur_state_in_step > 0) && (cur_state_in_step > max_state_in_step)) {
+				max_state_in_step = cur_state_in_step;
+				result = file_name;
+			}
+		}
+	}
+	return result;
 }
 

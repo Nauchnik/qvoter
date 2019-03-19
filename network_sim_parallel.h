@@ -40,7 +40,6 @@ private:
 	void controlProcess();
 	vector<space_point> generateSearchSpace(vector<vector<double>> search_space_values);
 	void computingProcess();
-	void getdir(string dir, vector<string> &files);
 };
 
 #endif

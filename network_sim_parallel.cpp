@@ -1,5 +1,4 @@
 #include "network_sim_parallel.h"
-#include "dirent.h"
 #include <sstream>
 
 const int TASK_LEN = 6;
@@ -70,7 +69,7 @@ void network_simiulation_parallel::controlProcess()
 		cout << "\n";
 	}
 
-	vector<point> search_space_points = generateSearchSpace(search_space_params);
+	vector<space_point> search_space_points = generateSearchSpace(search_space_params);
 	cout << "search space size : " << search_space_points.size() << endl;
 
 	string tasks_times_file_name = "tasks_times_out";
@@ -146,12 +145,14 @@ void network_simiulation_parallel::controlProcess()
 	int received_task_index = -1;
 	int stop_message = -1;
 	int task_status = -1;
-	
+	int previous_launches_count = 0;
 	while (processed_task_count + skipped_tasks < tasks_vec.size()) {
 		MPI_Recv(&received_task_index, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 		MPI_Recv(&task_status, 1, MPI_INT, status.MPI_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+		MPI_Recv(&previous_launches_count, 1, MPI_INT, status.MPI_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 		processed_task_count++;
-		tasks_vec[received_task_index].solving_time = MPI_Wtime() - tasks_vec[received_task_index].solving_time;
+		tasks_vec[received_task_index].solving_time = previous_launches_count*MAX_SOLVING_TIME_SEC + 
+			(MPI_Wtime() - tasks_vec[received_task_index].solving_time);
 		tasks_vec[received_task_index].status = task_status;
 		cout << "task_index " << received_task_index << endl;
 		cout << "solving_time " << tasks_vec[received_task_index].solving_time << endl;
@@ -211,23 +212,6 @@ vector<space_point> network_simiulation_parallel::generateSearchSpace(vector<vec
 	return search_space_points;
 }
 
-void network_simiulation_parallel::getdir(string dir, vector<string> &files)
-{
-	DIR *dp;
-	string cur_name;
-	struct dirent *dirp;
-	if ((dp = opendir(dir.c_str())) == NULL) {
-		cerr << endl << "Error in opening folder " << dir << endl;
-		exit(-1);
-	}
-	while ((dirp = readdir(dp)) != NULL) {
-		cur_name = string(dirp->d_name);
-		if (cur_name[0] != '.') 
-			files.push_back(cur_name);
-	}
-	closedir(dp);
-}
-
 void network_simiulation_parallel::computingProcess()
 {
 	//cout << "computingProcess()\n";
@@ -265,29 +249,22 @@ void network_simiulation_parallel::computingProcess()
 		n_s_seq.start_time = MPI_Wtime();
 		n_s_seq.GetOutputName();
 		n_s_seq.Init();
-
-		string system_str, cur_process_dir_name;
-		double control_process_solving_time = MPI_Wtime();
-		vector<string> solver_files_names = vector<string>();;
-		vector<string> cnf_files_names = vector<string>();
-		vector<string> solved_instances;
-		string cur_path = exec("echo $PWD");
-		cur_path.erase(remove(cur_path.begin(), cur_path.end(), '\r'), cur_path.end());
-		cur_path.erase(remove(cur_path.begin(), cur_path.end(), '\n'), cur_path.end());
-		getdir(cur_path, files_names));
-		if (rank == 1) {
-			cout << "cur_path " << cur_path << endl;
-			cout << "files_names size " << files_names.size() << endl;
+		string step_file_name = n_s_seq.FindStateFileName();
+		if (step_file_name != "") { // read state from file
+			n_s_seq.ReadSimulationState(step_file_name);
+			cout << "Simulation state was read from file " << step_file_name << endl;
 		}
-		
-		n_s_seq.CreateGraphER();
-		n_s_seq.CreateNodesState();
+		else { // start from scratch
+			n_s_seq.CreateGraphER();
+			n_s_seq.CreateNodesState();
+		}
 		n_s_seq.LaunchSimulation();
 		if (n_s_seq.status != -1) // if solved or interrupted
 			n_s_seq.SaveMeasure();
 		
 		MPI_Send(&task_index, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 		MPI_Send(&n_s_seq.status, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+		MPI_Send(&n_s_seq.previous_launches_count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
 	}
 
 	delete[] task;

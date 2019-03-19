@@ -43,6 +43,7 @@ public:
 	int t0;
 	int t_max;
 	int status;
+	int previous_launches_count;
 	double start_time;
 	string model;
 	string network_type;
@@ -63,6 +64,8 @@ public:
 	void CreateGraphER();
 	int CreateNodesState();
 	void SaveMeasure();
+	void ReadSimulationState(string inname);
+	string FindStateFileName();
 
 protected:
 	single_measure Measure(vector<int> &nodes_states, int N, vector < vector <int> > &network, int time);
@@ -83,8 +86,9 @@ protected:
 		vector<vector<int> > &network, vector<int> nodes_states, int N, int q,
 		double p);
 	void SaveSimulationState(int step, string type, int number_of_plus_nodes, int number_of_minus_nodes);
-	void ReadSimulationState(string inname);
 	vector<string> split(const string& s, char delimiter);
+	string exec(string cmd_str);
+	void getdir(string dir, vector<string> &files);
 };
 
 template< typename T >
