@@ -1,4 +1,5 @@
 #include "network_sim_parallel.h"
+#include "dirent.h"
 #include <sstream>
 
 const int TASK_LEN = 6;
@@ -200,14 +201,31 @@ void network_simiulation_parallel::controlProcess()
 #endif
 }
 
-vector<point> network_simiulation_parallel::generateSearchSpace(vector<vector<double>> search_space_params)
+vector<space_point> network_simiulation_parallel::generateSearchSpace(vector<vector<double>> search_space_params)
 {
-	vector<point> search_space_points;
+	vector<space_point> search_space_points;
 	vector<int> index_arr;
 	vector<double> cur_point;
 	while (next_cartesian(search_space_params, index_arr, cur_point))
 		search_space_points.push_back(cur_point);
 	return search_space_points;
+}
+
+void network_simiulation_parallel::getdir(string dir, vector<string> &files)
+{
+	DIR *dp;
+	string cur_name;
+	struct dirent *dirp;
+	if ((dp = opendir(dir.c_str())) == NULL) {
+		cerr << endl << "Error in opening folder " << dir << endl;
+		exit(-1);
+	}
+	while ((dirp = readdir(dp)) != NULL) {
+		cur_name = string(dirp->d_name);
+		if (cur_name[0] != '.') 
+			files.push_back(cur_name);
+	}
+	closedir(dp);
 }
 
 void network_simiulation_parallel::computingProcess()
@@ -247,10 +265,25 @@ void network_simiulation_parallel::computingProcess()
 		n_s_seq.start_time = MPI_Wtime();
 		n_s_seq.GetOutputName();
 		n_s_seq.Init();
+
+		string system_str, cur_process_dir_name;
+		double control_process_solving_time = MPI_Wtime();
+		vector<string> solver_files_names = vector<string>();;
+		vector<string> cnf_files_names = vector<string>();
+		vector<string> solved_instances;
+		string cur_path = exec("echo $PWD");
+		cur_path.erase(remove(cur_path.begin(), cur_path.end(), '\r'), cur_path.end());
+		cur_path.erase(remove(cur_path.begin(), cur_path.end(), '\n'), cur_path.end());
+		getdir(cur_path, files_names));
+		if (rank == 1) {
+			cout << "cur_path " << cur_path << endl;
+			cout << "files_names size " << files_names.size() << endl;
+		}
+		
 		n_s_seq.CreateGraphER();
 		n_s_seq.CreateNodesState();
 		n_s_seq.LaunchSimulation();
-		if (n_s_seq.status == 1) // if solved
+		if (n_s_seq.status != -1) // if solved or interrupted
 			n_s_seq.SaveMeasure();
 		
 		MPI_Send(&task_index, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);

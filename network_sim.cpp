@@ -418,7 +418,10 @@ void network_simiulation_sequential::DynamicsQVoterSameAK(int t0, list<single_me
 // write the measure list to the output file
 void network_simiulation_sequential::SaveMeasure()
 {
-	ofstream ofile(outname);
+	string filename = outname;
+	if (status == -2)
+		filename += "_interrupted";
+	ofstream ofile(filename);
 	ofile << "#time\tE_interface\tE_plus\tE_minus\tplus_nodes\tminus_nodes\n";
 	for (const auto& v : measure_list)
 		ofile << v.time << '\t' << v.E_interface << '\t' << v.E_plus << '\t' << v.E_minus
@@ -515,7 +518,6 @@ vector<string> network_simiulation_sequential::split(const string& s, char delim
    return tokens;
 }
 
-// not finished
 void network_simiulation_sequential::ReadSimulationState(string inname)
 {
 	int number_of_plus_nodes, number_of_minus_nodes;

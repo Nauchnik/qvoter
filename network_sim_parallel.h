@@ -7,14 +7,14 @@
 
 #include "network_sim.h"
 
-#define point vector<double>
+#define space_point vector<double>
 
 struct task
 {
 	int status;
 	double solving_time;
 	string out_file_name;
-	point task_point;
+	space_point task_point;
 };
 
 class network_simiulation_parallel: public network_simiulation_sequential
@@ -35,10 +35,12 @@ public:
 	void MPI_main();
 
 private:
-	void controlProcess();
-	vector<point> generateSearchSpace(vector<vector<double>> search_space_values);
-	void computingProcess();
 	double start_time;
+
+	void controlProcess();
+	vector<space_point> generateSearchSpace(vector<vector<double>> search_space_values);
+	void computingProcess();
+	void getdir(string dir, vector<string> &files);
 };
 
 #endif

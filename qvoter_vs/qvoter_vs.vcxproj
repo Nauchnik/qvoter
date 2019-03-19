@@ -120,6 +120,7 @@
     <ClCompile Include="..\network_sim_parallel.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\dirent.h" />
     <ClInclude Include="..\network_sim.h" />
     <ClInclude Include="..\network_sim_parallel.h" />
   </ItemGroup>
