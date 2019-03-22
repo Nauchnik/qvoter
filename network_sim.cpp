@@ -542,7 +542,7 @@ void network_simiulation_sequential::ReadSimulationState(string inname)
 	ifstream infile(inname);
 
 	if (!infile.is_open()) {
-		cerr << "Unable to open the file: " << inname << "\n";
+		cout << "Unable to open the file: " << inname << "\n";
 		exit(-1);
 	}
 
@@ -620,14 +620,17 @@ string network_simiulation_sequential::FindStateFileName()
 		size_t pos1 = file_name.find(outname);
 		size_t pos2 = file_name.find("state_in_step_");
 		if ((pos1 != string::npos) && (pos2 != string::npos)) {
+			cout << "outname " << outname << endl;
+			cout << "state file name " << file_name << endl;
 			previous_launches_count++;
 			string sstr = file_name.substr(pos2 + 14);
 			int cur_state_in_step = -1;
 			istringstream(sstr) >> cur_state_in_step;
 			if ((cur_state_in_step > 0) && (cur_state_in_step > max_state_in_step)) {
 				max_state_in_step = cur_state_in_step;
-				result = file_name;
+				result = cur_path + "/" + file_name;
 			}
+			cout << "cur_state_in_step " << cur_state_in_step << endl;
 		}
 	}
 	return result;

@@ -251,8 +251,8 @@ void network_simiulation_parallel::computingProcess()
 		n_s_seq.Init();
 		string step_file_name = n_s_seq.FindStateFileName();
 		if (step_file_name != "") { // read state from file
+			cout << "Trying to read file " << step_file_name << endl;
 			n_s_seq.ReadSimulationState(step_file_name);
-			cout << "Simulation state was read from file " << step_file_name << endl;
 		}
 		else { // start from scratch
 			n_s_seq.CreateGraphER();
