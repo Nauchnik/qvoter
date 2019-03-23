@@ -33,9 +33,9 @@ int main(int argc, char **argv)
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &corecount);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
+	
 	network_simiulation_parallel n_s_par;
-	n_s_par.verbosity = 0;
+	n_s_par.verbosity = 1;
 	n_s_par.network_size = network_size;
 	n_s_par.realizations = realizations;
 	n_s_par.corecount = corecount;
@@ -45,8 +45,22 @@ int main(int argc, char **argv)
 
 #ifdef _DEBUG
 	network_simiulation_sequential n_s_seq_tmp;
-	n_s_seq_tmp.outname = "qvoter_same_q-1_k-4_c-0.1_N-100000_p-0.25_r-6_seed-2330417661";
-	string step_file_name = n_s_seq_tmp.FindStateFileName();
+	n_s_seq_tmp.verbosity = 2;
+	n_s_seq_tmp.model = "qvoter_same";
+	n_s_seq_tmp.network_type = "er";
+	// "_q-" << q << "_k-" << k << "_c-" << c << "_N-" << N << "_p-" << p;
+	n_s_seq_tmp.q = 1;
+	n_s_seq_tmp.k = 4;
+	n_s_seq_tmp.c = 0.1;
+	n_s_seq_tmp.N = 100000;
+	n_s_seq_tmp.p = 0.25;
+	n_s_seq_tmp.realization = 2;
+	
+	string out_f_name_wout_seed = n_s_seq_tmp.GetOutputNameWoutSeed();
+	string step_file_name = "";
+	unsigned seed = 0;
+	n_s_seq_tmp.FindStateFileName(out_f_name_wout_seed, step_file_name, seed);
+	n_s_seq_tmp.realization = 2;
 #endif
 
 	if (argc < 12) {

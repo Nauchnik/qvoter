@@ -60,6 +60,17 @@ void network_simiulation_sequential::ReadParams(const int argc, char **argv)
 		<< "  filename-" << filename << "  folder-" << folder << "\n";
 }
 
+string network_simiulation_sequential::GetOutputNameWoutSeed()
+{
+	stringstream sstream;
+	sstream << folder << model << "_q-" << q << "_k-" << k << "_c-" << c << "_N-" << N << "_p-" << p;
+	if (filename != "")
+		sstream << "_" << filename;
+	sstream << "_r-" << realization;
+
+	return sstream.str();
+}
+
 void network_simiulation_sequential::GetOutputName() 
 {
 	stringstream sstream;
@@ -545,7 +556,7 @@ void network_simiulation_sequential::ReadSimulationState(string inname)
 		cout << "Unable to open the file: " << inname << "\n";
 		exit(-1);
 	}
-
+	
 	getline(infile, line);
 	getline(infile, line);
 	vector < string > arr = split(line, '\t');
@@ -605,7 +616,9 @@ void network_simiulation_sequential::getdir(string dir, vector<string> &files)
 	closedir(dp);
 }
 
-string network_simiulation_sequential::FindStateFileName()
+void network_simiulation_sequential::FindStateFileName(const string out_f_name_wout_seed, 
+													   string &step_file_name, 
+													   unsigned &seed)
 {
 	string result = "";
 	vector<string> files_names = vector<string>();
@@ -615,24 +628,33 @@ string network_simiulation_sequential::FindStateFileName()
 	cur_path.erase(remove(cur_path.begin(), cur_path.end(), '\r'), cur_path.end());
 	cur_path.erase(remove(cur_path.begin(), cur_path.end(), '\n'), cur_path.end());
 	getdir(cur_path, files_names);
+	if (verbosity > 1) {
+		cout << "cur_path " << cur_path << endl;
+		cout << "files_names size " << files_names.size() << endl;
+	}
 	int max_state_in_step = -1;
+	string state_str = "_state_in_step_";
+	string seed_str = "_seed-";
 	for (auto file_name : files_names) {
-		size_t pos1 = file_name.find(outname);
-		size_t pos2 = file_name.find("state_in_step_");
-		if ((pos1 != string::npos) && (pos2 != string::npos)) {
-			cout << "outname " << outname << endl;
-			cout << "state file name " << file_name << endl;
+		size_t pos = file_name.find(out_f_name_wout_seed);
+		size_t pos_state = file_name.find(state_str);
+		if ((pos != string::npos) && (pos_state != string::npos)) {
 			previous_launches_count++;
-			string sstr = file_name.substr(pos2 + 14);
+			string sstr = file_name.substr(pos_state + state_str.size());
 			int cur_state_in_step = -1;
 			istringstream(sstr) >> cur_state_in_step;
 			if ((cur_state_in_step > 0) && (cur_state_in_step > max_state_in_step)) {
 				max_state_in_step = cur_state_in_step;
-				result = cur_path + "/" + file_name;
+				step_file_name = cur_path + "/" + file_name;
 			}
 			cout << "cur_state_in_step " << cur_state_in_step << endl;
+			size_t seed_pos = file_name.find(seed_str);
+			if (seed_pos != string::npos) {
+				seed_pos += seed_str.size();
+				sstr = file_name.substr(seed_pos, pos_state-seed_pos);
+				istringstream(sstr) >> seed;
+			}
 		}
 	}
-	return result;
 }
 

@@ -6,6 +6,7 @@ const int TASK_LEN = 6;
 network_simiulation_parallel::network_simiulation_parallel() :
 	corecount(0),
 	rank(0),
+	verbosity(1),
 	network_size(0),
 	realizations(10),
 	start_time(-1)
@@ -99,9 +100,16 @@ void network_simiulation_parallel::controlProcess()
 			tasks_vec.push_back(cur_task);
 		}
 		cout << "tasks_vec.size() " << tasks_vec.size() << endl;
-		cout << "first 20 tasks statuses and times: \n";
-		for (unsigned i=0; i<20; i++)
-			cout << tasks_vec[i].status << " " << tasks_vec[i].solving_time << endl;
+		cout << "first 20 unsolved tasks statuses and times: \n";
+		int uns = 0;
+		for (auto task : tasks_vec) {
+			if (task.status != 1) {
+				cout << task.status << " " << task.solving_time << endl;
+				uns++;
+				if (uns == 20)
+					break;
+			}
+		}
 	}
 	else {
 		tasks_vec.resize(search_space_points.size());
@@ -227,17 +235,18 @@ void network_simiulation_parallel::computingProcess()
 			break;
 		}
 		MPI_Recv(task, TASK_LEN, MPI_DOUBLE, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-		/*cout << "received task index " << task_index << endl;
-		cout << "received task: \n";
-		for (unsigned i = 0; i < TASK_LEN; i++)
-			cout << task[i] << " ";
-		cout << endl;*/
-
+		if (verbosity > 1) {
+			cout << "received task index " << task_index << endl;
+			cout << "received task: \n";
+			for (unsigned i = 0; i < TASK_LEN; i++)
+				cout << task[i] << " ";
+			cout << endl;
+		}
+		
 		network_simiulation_sequential n_s_seq;
 		n_s_seq.verbosity = 0;
 		n_s_seq.model = "qvoter_same";
 		n_s_seq.network_type = "er";
-		n_s_seq.seed = (unsigned int)(time(NULL)) * task_index;
 		// "_q-" << q << "_k-" << k << "_c-" << c << "_N-" << N << "_p-" << p;
 		n_s_seq.q = (int)task[0];
 		n_s_seq.k = task[1];
@@ -245,11 +254,24 @@ void network_simiulation_parallel::computingProcess()
 		n_s_seq.N = (int)task[3];
 		n_s_seq.p = task[4];
 		n_s_seq.realization = (int)task[5];
+
+		string out_f_name_wout_seed = n_s_seq.GetOutputNameWoutSeed();
+		string step_file_name = "";
+		unsigned seed = 0;
+		n_s_seq.FindStateFileName(out_f_name_wout_seed, step_file_name, seed);
+		if (verbosity > 1) {
+			cout << "step_file_name " << step_file_name << endl;
+			cout << "seed " << seed << endl;
+		}
 		
-		n_s_seq.start_time = MPI_Wtime();
+		if ((step_file_name == "") && (seed == 0))
+			n_s_seq.seed = (unsigned int)(time(NULL)) * task_index;
+		else
+			n_s_seq.seed = seed;
+		
 		n_s_seq.GetOutputName();
+		n_s_seq.start_time = MPI_Wtime();
 		n_s_seq.Init();
-		string step_file_name = n_s_seq.FindStateFileName();
 		if (step_file_name != "") { // read state from file
 			cout << "Trying to read file " << step_file_name << endl;
 			n_s_seq.ReadSimulationState(step_file_name);

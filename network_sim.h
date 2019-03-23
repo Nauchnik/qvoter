@@ -60,13 +60,14 @@ public:
 	void ReadParams(const int argc, char **argv);
 	void Init();
 	void GetOutputName();
+	string GetOutputNameWoutSeed();
 	void LaunchSimulation();
 	void CreateGraphER();
 	int CreateNodesState();
 	void SaveMeasure();
 	void ReadSimulationState(string inname);
-	string FindStateFileName();
-
+	void FindStateFileName(const string out_f_name_wout_seed, string &step_file_name, unsigned &seed);
+	
 protected:
 	single_measure Measure(vector<int> &nodes_states, int N, vector < vector <int> > &network, int time);
 	void RewireToRandom(vector < vector <int> > &network, int basic_node, int old_neighbor, int N);

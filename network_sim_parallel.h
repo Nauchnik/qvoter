@@ -23,6 +23,7 @@ public:
 	network_simiulation_parallel();
 	int corecount;
 	int rank;
+	int verbosity;
 	int network_size;
 	int realizations;
 	vector<int> q_vec;
