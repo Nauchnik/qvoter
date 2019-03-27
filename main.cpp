@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 	
 	network_simiulation_parallel n_s_par;
-	n_s_par.verbosity = 1;
+	n_s_par.verbosity = 0;
 	n_s_par.network_size = network_size;
 	n_s_par.realizations = realizations;
 	n_s_par.corecount = corecount;

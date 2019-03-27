@@ -6,7 +6,7 @@ const int TASK_LEN = 6;
 network_simiulation_parallel::network_simiulation_parallel() :
 	corecount(0),
 	rank(0),
-	verbosity(1),
+	verbosity(0),
 	network_size(0),
 	realizations(10),
 	start_time(-1)
@@ -259,21 +259,22 @@ void network_simiulation_parallel::computingProcess()
 		string step_file_name = "";
 		unsigned seed = 0;
 		n_s_seq.FindStateFileName(out_f_name_wout_seed, step_file_name, seed);
-		if (verbosity > 1) {
-			cout << "step_file_name " << step_file_name << endl;
-			cout << "seed " << seed << endl;
-		}
 		
-		if ((step_file_name == "") && (seed == 0))
-			n_s_seq.seed = (unsigned int)(time(NULL)) * task_index;
-		else
-			n_s_seq.seed = seed;
+		if (step_file_name == "")
+			seed = (unsigned)(time(NULL)) * (unsigned)task_index;
+		else if (step_file_name != "")
+			cout << "For file " << out_f_name_wout_seed << " the latest step file is " << step_file_name << endl;
 		
+		if (seed == 0)
+			cout << "Warning, seed == 0" << endl;
+
+		n_s_seq.seed = seed;
 		n_s_seq.GetOutputName();
 		n_s_seq.start_time = MPI_Wtime();
 		n_s_seq.Init();
 		if (step_file_name != "") { // read state from file
-			cout << "Trying to read file " << step_file_name << endl;
+			if (verbosity > 0)
+				cout << "Trying to read file " << step_file_name << endl;
 			n_s_seq.ReadSimulationState(step_file_name);
 		}
 		else { // start from scratch
