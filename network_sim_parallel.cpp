@@ -254,33 +254,9 @@ void network_simiulation_parallel::computingProcess()
 		n_s_seq.N = (int)task[3];
 		n_s_seq.p = task[4];
 		n_s_seq.realization = (int)task[5];
-
-		string out_f_name_wout_seed = n_s_seq.GetOutputNameWoutSeed();
-		string step_file_name = "";
-		unsigned seed = 0;
-		n_s_seq.FindStateFileName(out_f_name_wout_seed, step_file_name, seed);
 		
-		if (step_file_name == "")
-			seed = (unsigned)(time(NULL)) * (unsigned)task_index;
-		else if (step_file_name != "")
-			cout << "For file " << out_f_name_wout_seed << " the latest step file is " << step_file_name << endl;
-		
-		if (seed == 0)
-			cout << "Warning, seed == 0" << endl;
-
-		n_s_seq.seed = seed;
-		n_s_seq.GetOutputName();
 		n_s_seq.start_time = MPI_Wtime();
-		n_s_seq.Init();
-		if (step_file_name != "") { // read state from file
-			if (verbosity > 0)
-				cout << "Trying to read file " << step_file_name << endl;
-			n_s_seq.ReadSimulationState(step_file_name);
-		}
-		else { // start from scratch
-			n_s_seq.CreateGraphER();
-			n_s_seq.CreateNodesState();
-		}
+		n_s_seq.Init(task_index);
 		n_s_seq.LaunchSimulation();
 		if (n_s_seq.status != -1) // if solved or interrupted
 			n_s_seq.SaveMeasure();

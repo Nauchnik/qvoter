@@ -43,28 +43,21 @@ int main(int argc, char **argv)
 	n_s_par.MPI_main();
 #else
 
+	network_simiulation_sequential n_s_seq;
 #ifdef _DEBUG
-	network_simiulation_sequential n_s_seq_tmp;
-	n_s_seq_tmp.verbosity = 2;
-	n_s_seq_tmp.model = "qvoter_same";
-	n_s_seq_tmp.network_type = "er";
+	n_s_seq.verbosity = 2;
+	n_s_seq.model = "qvoter_same";
+	n_s_seq.network_type = "er";
 	// "_q-" << q << "_k-" << k << "_c-" << c << "_N-" << N << "_p-" << p;
-	n_s_seq_tmp.q = 1;
-	n_s_seq_tmp.k = 4;
-	n_s_seq_tmp.c = 0.1;
-	n_s_seq_tmp.N = 100000;
-	n_s_seq_tmp.p = 0.25;
-	n_s_seq_tmp.realization = 2;
-	
-	string out_f_name_wout_seed = n_s_seq_tmp.GetOutputNameWoutSeed();
-	string step_file_name = "";
-	unsigned seed = 0;
-	n_s_seq_tmp.FindStateFileName(out_f_name_wout_seed, step_file_name, seed);
-	n_s_seq_tmp.realization = 2;
-#endif
-
+	n_s_seq.q = 1;
+	n_s_seq.k = 4;
+	n_s_seq.c = 0.1;
+	n_s_seq.N = 100000;
+	n_s_seq.p = 0.25;
+	n_s_seq.realization = 2;
+#else
 	if (argc < 12) {
-		cerr << "Usage: program model network N c k q p t_0 t_max folder filename [seed]" << "\n";
+		cerr << "Usage: program model network N c k q p t_0 t_max folder filename [realization] [seed]" << "\n";
 		cerr << "--- few minutes execution ---\n"
 			<< "model = qvoter_same\n"
 			<< "network = er\n"
@@ -79,16 +72,11 @@ int main(int argc, char **argv)
 			<< "filename = 1\n";
 		exit(-1);
 	}
-	
+	n_s_seq.ReadParams(argc, argv);
+#endif
 	auto start = chrono::system_clock::now();
 
-	network_simiulation_sequential n_s_seq;
-	n_s_seq.verbosity = 1;
-	n_s_seq.ReadParams(argc, argv);
-	n_s_seq.GetOutputName();
 	n_s_seq.Init();
-	n_s_seq.CreateGraphER();
-	n_s_seq.CreateNodesState();
 	n_s_seq.LaunchSimulation();
 	n_s_seq.SaveMeasure();
 

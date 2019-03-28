@@ -33,7 +33,7 @@ class network_simiulation_sequential
 public:
 	network_simiulation_sequential();
 	string params_file_name;
-	unsigned int seed;
+	unsigned seed;
 	int N;
 	double c;
 	double k;
@@ -58,7 +58,7 @@ public:
 	int verbosity;
 
 	void ReadParams(const int argc, char **argv);
-	void Init();
+	void Init(int task_index = 1);
 	void GetOutputName();
 	string GetOutputNameWoutSeed();
 	void LaunchSimulation();

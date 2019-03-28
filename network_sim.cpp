@@ -23,11 +23,12 @@ network_simiulation_sequential::network_simiulation_sequential() :
 	t_max(1000000000),
 	folder(""),
 	filename(""),
-	seed(-1),
+	seed(0),
 	realization(0),
 	status(-1),
 	start_time(0.0),
-	previous_launches_count(0)
+	previous_launches_count(0),
+	verbosity(1)
 {}
 
 void network_simiulation_sequential::ReadParams(const int argc, char **argv)
@@ -45,27 +46,30 @@ void network_simiulation_sequential::ReadParams(const int argc, char **argv)
 	folder = argv[10];
 	filename = argv[11];
 
-	if (argc > 12) {
-		istringstream(argv[12]) >> seed;
-		cout << "seed " << seed << endl;
+	if (folder == "./") {
+		folder = "";
+		cout << "empty folder was set \n";
 	}
-	else {
-		seed = (unsigned int)(time(NULL));
-		cout << "seed was chosen from the current time\n";
-	}
-
-	cout << "seed " << seed << endl;
+	
 	cout << "params: model-" << model << "  N-" << N << "  c-" << c << "  k-"
 		<< k << "  q-" << q << "  p-" << p << " t0-" << t0 << "  t_max-" << t_max
 		<< "  filename-" << filename << "  folder-" << folder << "\n";
+
+	if (argc > 12) {
+		istringstream(argv[12]) >> realization;
+		cout << "realization " << realization << endl;
+	}
+
+	if (argc > 13) {
+		istringstream(argv[13]) >> seed;
+		cout << "seed " << seed << endl;
+	}
 }
 
 string network_simiulation_sequential::GetOutputNameWoutSeed()
 {
 	stringstream sstream;
 	sstream << folder << model << "_q-" << q << "_k-" << k << "_c-" << c << "_N-" << N << "_p-" << p;
-	if (filename != "")
-		sstream << "_" << filename;
 	sstream << "_r-" << realization;
 
 	return sstream.str();
@@ -84,12 +88,33 @@ void network_simiulation_sequential::GetOutputName()
 		cout << "output file name is " << outname << endl;
 }
 
-void network_simiulation_sequential::Init()
+void network_simiulation_sequential::Init(int task_index)
 {
-	//ReadSimulationState("qvoter_same_q-2_k-8_c-0.5_N-10_p-0_test_r--1387736016_seed-1_state_in_step_2");
+	string out_f_name_wout_seed = GetOutputNameWoutSeed();
+	string step_file_name = "";
+	FindStateFileName(out_f_name_wout_seed, step_file_name, seed);
+	
+	if (step_file_name == "") {
+		if (seed == 0)
+			seed = (unsigned)(time(NULL)) * (unsigned)task_index;
+	}
+	else
+		cout << "For file " << out_f_name_wout_seed << " the latest step file is " << step_file_name << endl;
+	
+	if (seed == 0)
+		cout << "Warning, seed == 0" << endl;
 	srand(seed);
-	nodes_states.resize(N);
-	network.resize(N);
+	
+	GetOutputName();
+	if (step_file_name != "") { // read state from file
+		if (verbosity > 0)
+			cout << "Trying to read file " << step_file_name << endl;
+		ReadSimulationState(step_file_name);
+	}
+	else { // start from scratch
+		CreateGraphER();
+		CreateNodesState();
+	}
 }
 
 void network_simiulation_sequential::LaunchSimulation()
@@ -116,6 +141,7 @@ void network_simiulation_sequential::LaunchSimulation()
 // create a random Erdos Renyi graph with N nodes and mean degree k
 void network_simiulation_sequential::CreateGraphER()
 {
+	network.resize(N);
 	double p = k / ((double)N - 1);
 	double r;
 	for (int i = 0; i < N; i++) {
@@ -132,6 +158,7 @@ void network_simiulation_sequential::CreateGraphER()
 //adds states to nodes, c*N nodes with plus state, (1-c)*N with -1 state
 int network_simiulation_sequential::CreateNodesState()
 {
+	nodes_states.resize(N);
 	int bound = (int)round(c*(double)N);
 	for (int i = 0; i < bound; i++)
 		nodes_states[i] = 1;
