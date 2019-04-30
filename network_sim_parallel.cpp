@@ -110,13 +110,13 @@ void network_simiulation_parallel::controlProcess()
 					break;
 			}
 		}
+		tasks_file.close();
 	}
 	else {
 		tasks_vec.resize(search_space_points.size());
 		for (auto x : tasks_vec)
 			x.status = -1;
 	}
-	tasks_file.close();
 
 	if (search_space_points.size() != tasks_vec.size()) {
 		cerr << "search_space_points.size() != tasks_vec.size()" << endl;
